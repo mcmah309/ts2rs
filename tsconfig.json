@@ -1,0 +1,51 @@
+{
+  "files": [
+    "js/build.ts"
+  ],
+  "include": [
+    "js/*/build.ts",
+    "js/scripts/**/*",
+  ],
+  "references": [ // Tells the ide/compiler the relation between projects (Each sub project tsconfig.json also needs the correct relations).
+    {
+      "path": "./js/to-rs"
+    },
+  ],
+  "compilerOptions": {
+    "noEmit": true, // Asserts that this is just the root config and this "tsconfig" should not generate anything itself
+    "paths": { // Sometines needed for the ide to resolve "go to" definitions
+      "to-rs": ["./js/to-rs"],
+      "to-rs/*": ["./js/to-rs/*"]
+    },
+    "target": "ESNext", // Output the most modern JS features (Bun handles the rest)
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ], // Include latest JS APIs and Browser APIs (if applicable)
+    "module": "ESNext", // Use standard ESM (import/export) syntax
+    "moduleResolution": "bundler", // Tell TS to find files the way Bun/Vite does
+    "moduleDetection": "force", // Ensure modules are always treated as ES modules
+    "types": [], // Forces bun global types to be removed (which is auto-added)
+    // Instead of adding bun types globally. Add `/// <reference types="bun-types" />` or `/// <reference types="bun" />` to the top of files as needed
+    // "types": ["bun"],                  // Enable auto-completion for Bun globals (Bun.file, etc.)
+    // "jsx": "react-jsx",                   // Support JSX without 'import React' (common in Bun libs)
+    "allowImportingTsExtensions": true, // Allows 'import ./file.ts' (required for Bun's workflow)
+    "isolatedModules": true, // Ensures files can be safely transpiled one-by-one by Bun
+    "verbatimModuleSyntax": true, // Prevents TS from "fixing" your imports; keeps them predictable
+    "declaration": true, // Generate .d.ts files so users get type-checking
+    "declarationMap": true, // Create maps that link .d.ts back to your source .ts code
+    "emitDeclarationOnly": true, // tsc will ONLY output type files, not js, bun and our build script handles js
+    "isolatedDeclarations": true, // Needed for bun to generate types instead of `tsc`. Also, faster builds, but in some situation cannot infer type.
+    "stripInternal": true, // Remove anything marked as `@internal` from generated `.d.ts` file
+    "strict": true, // Enable all strict type-checking options
+    "skipLibCheck": true, // Don't check types in node_modules (massive speed boost)
+    "noUncheckedIndexedAccess": true, // Forces you to check if array items exist (e.g., arr[0]?)
+    "noImplicitOverride": true, // Ensures 'override' keyword is used in classes
+    "forceConsistentCasingInFileNames": true, // Prevents bugs when moving between Mac/Windows/Linux
+    "noUnusedLocals": false, // Error if a variable is defined but not used
+    "noUnusedParameters": false, // Error if a function parameter is defined but not used
+    "noFallthroughCasesInSwitch": true, // Prevents accidental bugs in switch statements
+    "noPropertyAccessFromIndexSignature": true, // Enforces stricter access to properties defined in index signatures
+  },
+}

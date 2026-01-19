@@ -1,0 +1,35 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "bun run --bun --workspaces build",
+    "build:release": "bun run --bun --workspaces build:release",
+    "test": "bun run --bun --workspaces test",
+    "sync-tsconfigs": "bun run -i ./js/scripts/sync-tsconfigs.ts"
+  },
+  "workspaces": {
+    "packages": [
+      "js/*"
+    ],
+    "catalog": {
+      "@types/bun": "latest",
+      "typescript": "latest",
+      "@tailwindcss/cli": "latest",
+      "tailwindcss": "latest",
+      "typed-css-modules": "latest",
+      "html-minifier-next": "latest",
+      "web-resource-inliner": "latest",
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@tailwindcss/cli": "catalog:",
+    "typescript": "catalog:",
+    "tailwindcss": "catalog:",
+    "typed-css-modules": "catalog:",
+    "html-minifier-next": "catalog:",
+    "web-resource-inliner": "catalog:",
+  },
+  "peerDependencies": {
+    "typescript": "catalog:"
+  }
+}

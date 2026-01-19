@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "files": [],
+  "include": [
+    "src/**/*"
+  ], // Files to include during compilation
+  "exclude": [
+    "node_modules",
+    "dist",
+    "demo",
+    "**/*.test.ts"
+  ],
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "./src",
+    "outDir": "./dist/lib",
+  }
+}
