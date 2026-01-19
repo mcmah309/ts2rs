@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 {
-	"name": "rust",
-	"image": "rust",
+	"name": "dioxus",
+	"image": "dioxus",
 	"customizations": {
 		"vscode": {
 			"settings": {
@@ -25,6 +25,16 @@
 				
 				
 				
+				
+				// web
+				"oven.bun-vscode", // bun
+				"esbenp.prettier-vscode", // formatter for ts/js
+				"ecmel.vscode-html-css", // html/css support
+				"bradlc.vscode-tailwindcss", // tailwind css support
+				"jock.svg", // svg language support
+				"vincaslt.highlight-matching-tag", // highlights matching html tags
+				"pranaygp.vscode-css-peek", // Go to definition for css
+				"pushqrdx.inline-html", // syntax highlight and intellisense for html and css in js strings - e.g. `/* html */`
 				
 				
 			]
