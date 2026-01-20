@@ -1,0 +1,7 @@
+{
+  "__type": "Order",
+  "orderId": "ORD123",
+  "status": "processing",
+  "priority": "3",
+  "themeColor": "blue"
+}

@@ -40,6 +40,7 @@ export class TypeResolver {
   private processingTypes: Set<string> = new Set(); // For cycle detection
   private typeParameters: Set<string> = new Set(); // Track current type parameters
   private options: ConversionOptions;
+  private warnings: string[] = []; // Track warnings during resolution
 
   constructor(options: ConversionOptions) {
     this.options = options;
@@ -83,6 +84,36 @@ export class TypeResolver {
     }
 
     return Array.from(this.collectedTypes.values());
+  }
+
+  /**
+   * Get all warnings generated during resolution
+   */
+  getWarnings(): string[] {
+    return this.warnings;
+  }
+
+  /**
+   * Handle falling back to serde_json::Value
+   * In strict mode, this throws an error. Otherwise, it logs a warning and returns JsonValueType.
+   */
+  private handleValueFallback(
+    reason: string,
+    type?: Type,
+    sourceFile?: string,
+  ): ResolvedType {
+    const message = `Falling back to serde_json::Value: ${reason}${sourceFile ? ` (in ${sourceFile})` : ""}${type ? ` (type: ${type.getText()})` : ""}`;
+    
+    if (this.options.strict) {
+      throw new TypeConversionError(
+        type?.getText() ?? "unknown",
+        reason,
+        sourceFile,
+      );
+    }
+    
+    this.warnings.push(message);
+    return { kind: "json_value" };
   }
 
   private resolveAllExportedTypes(sourceFile: SourceFile): void {
@@ -559,7 +590,11 @@ export class TypeResolver {
     }
     
     // Could not resolve, return json_value
-    return { kind: "json_value" };
+    return this.handleValueFallback(
+      "Type could not be resolved",
+      undefined,
+      sourceFile.getFilePath(),
+    );
   }
 
   private resolveType(type: Type, sourceFile: SourceFile): ResolvedType {
@@ -575,7 +610,11 @@ export class TypeResolver {
       const typeParamName = type.getSymbol()?.getName();
       if (typeParamName && this.typeParameters.has(typeParamName)) {
         // This is a known type parameter, return json_value as a generic placeholder
-        return { kind: "json_value" };
+        return this.handleValueFallback(
+          `Type parameter '${typeParamName}' cannot be resolved to concrete type`,
+          type,
+          sourceFile.getFilePath(),
+        );
       }
     }
 
@@ -592,6 +631,7 @@ export class TypeResolver {
     }
 
     if (type.isAny() || type.isUnknown()) {
+      // Explicit any/unknown types are acceptable - no warning needed
       return { kind: "json_value" };
     }
 
@@ -666,7 +706,7 @@ export class TypeResolver {
           
           // For types from node_modules, we need to check if this is a top-level
           // type declaration or a nested type (like PackageJson.WorkspaceConfig)
-          if (filePath.includes("node_modules") && !filePath.includes("node_modules/typescript/lib")) {
+          if (this.isFromNodeModules(filePath)) {
             // Add the source file if not already added
             if (!this.project.getSourceFile(filePath)) {
               this.project.addSourceFileAtPath(filePath);
@@ -805,7 +845,11 @@ export class TypeResolver {
 
       // Skip internal TypeScript types
       if (this.isInternalType(symbolName)) {
-        return { kind: "json_value" };
+        return this.handleValueFallback(
+          `Internal TypeScript type '${symbolName}' cannot be converted`,
+          type,
+          sourceFile.getFilePath(),
+        );
       }
 
       // Handle custom types by resolving
@@ -815,13 +859,8 @@ export class TypeResolver {
           const declSourceFile = decl.getSourceFile();
           const filePath = declSourceFile.getFilePath();
           
-          // Check if this is from node_modules but NOT a workspace package
-          // Workspace packages typically have their source files accessible
-          const isNodeModules = filePath.includes("node_modules");
-          const isTypeScriptLib = filePath.includes("node_modules/typescript/lib");
-          
           // Try to resolve the type if it's not from TypeScript's lib
-          if (!isTypeScriptLib) {
+          if (!this.isFromTypeScriptLib(filePath)) {
             // Add the source file to the project if not already added
             if (!this.project.getSourceFile(filePath)) {
               this.project.addSourceFileAtPath(filePath);
@@ -831,7 +870,11 @@ export class TypeResolver {
             this.resolveTypeByName(declSourceFile, symbolName);
           } else {
             // For TypeScript lib types, return json_value
-            return { kind: "json_value" };
+            return this.handleValueFallback(
+              `TypeScript lib type '${symbolName}' from '${filePath}' cannot be resolved`,
+              type,
+              sourceFile.getFilePath(),
+            );
           }
         }
 
@@ -885,9 +928,22 @@ export class TypeResolver {
     }
 
     // Fallback to json value for complex types
-    return { kind: "json_value" };
+    return this.handleValueFallback(
+      "Complex type could not be resolved",
+      type,
+      sourceFile.getFilePath(),
+    );
   }
 
+  /**
+   * Resolve inline union types (e.g., string | number | Type1 | Type2)
+   * 
+   * This method handles several patterns:
+   * 1. Named type aliases that reference unions (resolve by name)
+   * 2. T | null or T | undefined patterns (convert to Option<T>)
+   * 3. Inline literal unions (cannot convert without a name)
+   * 4. Other complex unions (fallback to json_value)
+   */
   private resolveInlineUnionType(type: Type, sourceFile: SourceFile): ResolvedType {
     const unionTypes = type.getUnionTypes();
 
@@ -955,11 +1011,19 @@ export class TypeResolver {
       // All string literals - this could be an inline enum
       // Return as json_value since we can't create an anonymous enum inline
       // The caller should handle this case appropriately
-      return { kind: "json_value" };
+      return this.handleValueFallback(
+        "Inline literal union cannot be converted (must be a named type)",
+        type,
+        sourceFile.getFilePath(),
+      );
     }
 
     // For other unions, fallback to json_value
-    return { kind: "json_value" };
+    return this.handleValueFallback(
+      "Union type could not be resolved",
+      type,
+      sourceFile.getFilePath(),
+    );
   }
 
   private isBuiltInType(type: Type): boolean {
@@ -993,6 +1057,20 @@ export class TypeResolver {
   private isInternalType(symbolName: string): boolean {
     // Skip internal TypeScript types
     return symbolName.startsWith("__") || symbolName === "Object" || symbolName === "Function";
+  }
+
+  /**
+   * Check if a file path is from node_modules (excluding TypeScript lib)
+   */
+  private isFromNodeModules(filePath: string): boolean {
+    return filePath.includes("node_modules") && !filePath.includes("node_modules/typescript/lib");
+  }
+
+  /**
+   * Check if a file path is from TypeScript's built-in lib
+   */
+  private isFromTypeScriptLib(filePath: string): boolean {
+    return filePath.includes("node_modules/typescript/lib");
   }
 
   private isLiteralUnion(types: Type[]): boolean {

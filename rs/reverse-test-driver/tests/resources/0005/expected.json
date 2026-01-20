@@ -1,0 +1,8 @@
+{
+  "__type": "DataPoint",
+  "values": ["temperature", 23.5],
+  "metadata": {
+    "source": "sensor",
+    "accuracy": 0.95
+  }
+}

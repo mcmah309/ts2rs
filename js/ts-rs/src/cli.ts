@@ -28,6 +28,10 @@ program
     "-m, --mapping <mappings>",
     "Custom type mappings in format TypeScriptName:RustName,... (comma-separated)",
   )
+  .option(
+    "-s, --strict",
+    "Strict mode: fail on unresolvable types instead of falling back to serde_json::Value",
+  )
   .action(async (options) => {
     try {
       const inputPath = path.resolve(process.cwd(), options.input);
@@ -56,6 +60,7 @@ program
         outputPath,
         typeNames,
         customTypeMappings,
+        strict: options.strict,
       });
 
       if (result.warnings.length > 0) {

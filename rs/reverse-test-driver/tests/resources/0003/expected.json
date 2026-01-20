@@ -1,0 +1,15 @@
+{
+  "__type": "ShoppingCart",
+  "items": [
+    {
+      "id": "prod1",
+      "name": "Widget",
+      "price": 19.99,
+      "inStock": true,
+      "categories": ["electronics", "gadgets"]
+    }
+  ],
+  "totalPrice": 19.99,
+  "discount": 5.0,
+  "tags": ["sale", "featured"]
+}

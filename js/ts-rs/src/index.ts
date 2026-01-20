@@ -58,17 +58,21 @@ export async function convert(options: ConversionOptions): Promise<ConversionRes
 
   const resolver = new TypeResolver(resolverOptions);
   const collectedTypes = resolver.resolve();
+  const resolverWarnings = resolver.getWarnings();
 
   if (collectedTypes.length === 0) {
     return {
       rustCode: "// No types found to convert\n",
       convertedTypes: [],
-      warnings: ["No exportable types found in the entry file"],
+      warnings: ["No exportable types found in the entry file", ...resolverWarnings],
     };
   }
 
   const generator = new RustGenerator(resolverOptions);
   const result = generator.generate(collectedTypes);
+
+  // Combine warnings from resolver and generator
+  result.warnings = [...resolverWarnings, ...result.warnings];
 
   if (options.outputPath) {
     const outputPath = path.resolve(options.outputPath);

@@ -151,6 +151,11 @@ export interface ConversionOptions {
    * Custom type mappings from TypeScript type names to Rust type names
    */
   customTypeMappings?: Record<string, string>;
+
+  /**
+   * Strict mode: fail on unresolvable types instead of falling back to serde_json::Value
+   */
+  strict?: boolean;
 }
 
 /**
