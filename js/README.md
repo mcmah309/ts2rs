@@ -1,0 +1,4 @@
+Example
+```sh
+bun run ./ts-rs/src/cli.ts -i test-package2/src/index.ts
+```
