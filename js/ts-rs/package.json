@@ -1,0 +1,38 @@
+{
+  "name": "ts-to-rs",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Deeply inspects typescript types to convert to rust types for bidirectional JSON serialization",
+  "bin": {
+    "ts-to-rs": "./src/cli.ts"
+  },
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/index.js",
+      "default": "./dist/lib/index.js"
+    },
+    "./bundle": "./dist/bundle/index.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun run ../build.ts",
+    "build:release": "NODE_ENV=production bun run ../build.ts",
+    "watch": "bun run ../build.ts --watch",
+    "test": "bun test",
+    "generate": "bun run ./src/cli.ts"
+  },
+  "dependencies": {
+    "commander": "catalog:",
+    "ts-morph": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:"
+  }
+}

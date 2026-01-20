@@ -3,16 +3,17 @@
   "files": [],
   "include": [
     "src/**/*",
-    "tests/**/*", // We need to include test file otherwise we get compiler errors. Build we don't use this to build since we use `tsconfig.build.json`
+    "tests/**/*" // We need to include test file otherwise we get compiler errors. Build we don't use this to build since we use `tsconfig.build.json`
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "demo",
+    "demo"
   ], // Files to ignore during compilation
   "compilerOptions": { // Project specific compiler options
     "noEmit": false,
     "rootDir": ".", // This is set to here so `tests` will not error. But in `../build.ts` we set to `./src`
-    "composite": true, // Allows using references to this project
+    "composite": true // Allows using references to this project
   },
+  "references": []
 }
