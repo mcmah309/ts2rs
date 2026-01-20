@@ -393,6 +393,16 @@ export class TypeResolver {
       }
 
       const unionType = this.resolveUnionType(name, unionTypes, declaration);
+      
+      // If the union has unresolvable types, don't collect it
+      // It will be used as Value in other types
+      if (unionType === null) {
+        this.warnings.push(
+          `Union type '${name}' has unresolvable variants and will be used as serde_json::Value in other types (at ${declaration.getSourceFile().getFilePath()})`
+        );
+        return;
+      }
+      
       this.collectedTypes.set(name, {
         name,
         type: unionType,
@@ -582,6 +592,16 @@ export class TypeResolver {
             const declaration = this.findTypeDeclaration(moduleSourceFile, typeName);
             if (declaration) {
               this.resolveTypeByName(moduleSourceFile, typeName);
+              
+              // Check if the type was actually collected
+              if (!this.collectedTypes.has(typeName)) {
+                return this.handleValueFallback(
+                  `Type '${typeName}' could not be fully resolved`,
+                  undefined,
+                  sourceFile.getFilePath(),
+                );
+              }
+              
               return { kind: "struct", name: typeName, fields: [] };
             }
           }
@@ -868,6 +888,16 @@ export class TypeResolver {
             
             // Try to resolve the type
             this.resolveTypeByName(declSourceFile, symbolName);
+            
+            // Check if the type was actually collected
+            // If not, it means it couldn't be resolved (e.g., union with unresolvable types)
+            if (!this.collectedTypes.has(symbolName)) {
+              return this.handleValueFallback(
+                `Type '${symbolName}' could not be fully resolved`,
+                type,
+                sourceFile.getFilePath(),
+              );
+            }
           } else {
             // For TypeScript lib types, return json_value
             return this.handleValueFallback(
@@ -971,6 +1001,15 @@ export class TypeResolver {
         } else {
           // Non-generic type alias - resolve it by name
           this.resolveTypeByName(declSourceFile, typeName);
+          
+          // Check if the type was actually collected
+          if (!this.collectedTypes.has(typeName)) {
+            return this.handleValueFallback(
+              `Type '${typeName}' could not be fully resolved`,
+              type,
+              sourceFile.getFilePath(),
+            );
+          }
           
           // Return a reference to this type
           return {
@@ -1281,9 +1320,10 @@ export class TypeResolver {
     name: string,
     types: Type[],
     declaration: TypeAliasDeclaration,
-  ): UnionType {
+  ): UnionType | null {
     const sourceFile = declaration.getSourceFile();
     const variants: UnionVariant[] = [];
+    let hasUnresolvableType = false;
 
     for (let i = 0; i < types.length; i++) {
       const t = types[i];
@@ -1294,10 +1334,20 @@ export class TypeResolver {
 
       const resolvedType = this.resolveType(t, sourceFile);
 
+      // Check if this variant couldn't be resolved
+      if (resolvedType.kind === "json_value") {
+        hasUnresolvableType = true;
+      }
+
       variants.push({
         name: variantName,
         type: resolvedType.kind === "primitive" && resolvedType.type === "null" ? null : resolvedType,
       });
+    }
+
+    // If any variant is unresolvable, don't generate the union
+    if (hasUnresolvableType) {
+      return null;
     }
 
     return {

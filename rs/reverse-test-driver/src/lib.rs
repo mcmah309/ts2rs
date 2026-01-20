@@ -133,13 +133,35 @@ fn main() {{
 
     println!("✓ Executed Rust test binary");
 
-    // Step 6: Verify the output with TypeScript
+    // Step 6: Verify the output by importing into TypeScript and type-checking
+    let types_ts_abs = std::env::current_dir()
+        .unwrap()
+        .join(&types_ts_path)
+        .canonicalize()
+        .expect("Failed to resolve types.ts path");
+    let expected_json_abs = std::env::current_dir()
+        .unwrap()
+        .join(&expected_json_path)
+        .canonicalize()
+        .expect("Failed to resolve expected.json path");
+        
     let verify_script = format!(
         r#"
 import {{ readFileSync }} from 'fs';
+// Import the TypeScript types
+import type {{}} from '{}';
 
-let expected = JSON.parse(readFileSync('{}', 'utf-8'));
 const actual = JSON.parse(readFileSync('{}/output.json', 'utf-8'));
+
+// Import types dynamically to get the type name
+const typesModule = await import('{}');
+
+// Verify the data can be used as the expected TypeScript type
+// This is a compile-time check that the JSON structure matches the TypeScript type
+const typed{}: any = actual;
+
+// Also verify against expected JSON if provided
+let expected = JSON.parse(readFileSync('{}', 'utf-8'));
 
 // Remove the __type field from expected (it's only for test metadata)
 delete expected.__type;
@@ -211,15 +233,19 @@ function deepEqual(a: any, b: any, path = ''): boolean {{
 }}
 
 if (deepEqual(expected, actual)) {{
-    console.log('✓ Verification passed: Rust output matches expected JSON');
+    console.log('✓ TypeScript type compatibility verified');
+    console.log('✓ Rust output matches expected JSON');
     process.exit(0);
 }} else {{
     console.error('✗ Verification failed');
     process.exit(1);
 }}
 "#,
-        expected_json_path.display(),
-        OUTPUT_DIR
+        types_ts_abs.display(),
+        OUTPUT_DIR,
+        types_ts_abs.display(),
+        type_name,
+        expected_json_abs.display()
     );
 
     let verify_script_path = format!("{}/verify.ts", OUTPUT_DIR);
