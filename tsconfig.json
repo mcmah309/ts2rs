@@ -8,15 +8,11 @@
   ],
   "references": [ // Tells the ide/compiler the relation between projects (Each sub project tsconfig.json also needs the correct relations).
     {
-      "path": "./js/to-rs"
+      "path": "./js/ts-rs"
     },
   ],
   "compilerOptions": {
     "noEmit": true, // Asserts that this is just the root config and this "tsconfig" should not generate anything itself
-    "paths": { // Sometines needed for the ide to resolve "go to" definitions
-      "to-rs": ["./js/to-rs"],
-      "to-rs/*": ["./js/to-rs/*"]
-    },
     "target": "ESNext", // Output the most modern JS features (Bun handles the rest)
     "lib": [
       "ESNext",

@@ -1,5 +1,5 @@
 [package]
-name = "to-rs"
+name = "test-driver"
 # description = ""
 version = "0.0.1"
 edition = "2024"
@@ -10,24 +10,11 @@ edition = "2024"
 # documentation = "" # Alternative documentation
 # rust-version = "" # Min required rust version
 
-todo remove if not binary
-# [[bin]]
-# name = "to-rs"
-# path = "src/main.rs"
-
 [dependencies]
 
-todo remove the ones not needed
 [dev-dependencies]
 assert_cmd = "2"
 predicates = "3"
-tempfile = "3"
-criterion = "0.8"
-
-todo remove if do not need benches
-[[bench]]
-name = "to-rs"
-harness = false
 
 [features]
 default = []
