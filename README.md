@@ -1,35 +1,10 @@
 # ts-rs
 
-A TypeScript to Rust type converter for bidirectional JSON serialization. This tool generates Rust type definitions from TypeScript types, enabling seamless data interchange between TypeScript and Rust applications via JSON.
-
-## Features
-
-- 🔄 **Bidirectional JSON Serialization**: Generate Rust types that serialize/deserialize to/from JSON compatible with TypeScript
-- 📦 **Cross-Package Support**: Resolve types from external npm packages and node_modules
-- 🎯 **Comprehensive Type Coverage**:
-  - Interfaces and type aliases
-  - Enums (string and numeric)
-  - Discriminated unions (tagged unions)
-  - Arrays, tuples, and records
-  - Optional fields and nullable types
-  - Nested objects and complex types
-- ⚠️ **Warning System**: Track when types fall back to `serde_json::Value`
-- 🔒 **Strict Mode**: Fail on unresolvable types instead of falling back
-- ✅ **Extensive Test Suite**: 18 forward tests + 5 reverse tests
+A TypeScript to Rust type converter for bidirectional JSON serialization. This tool generates Rust type definitions from TypeScript types, enabling seamless data interchange between TypeScript and Rust applications via JSON. Nested types are traversed, even types in different packages.
 
 ## Installation
 
-```bash
-# Install bun (if not already installed)
-curl -fsSL https://bun.sh/install | bash
-
-# Clone the repository
-git clone https://github.com/mcmah309/ts-rs.git
-cd ts-rs
-
-# Build the project
-bun install
-```
+todo Update
 
 ## Usage
 
@@ -42,7 +17,7 @@ bun js/ts-rs/src/cli.ts -i input.ts -o output.rs
 # Convert specific types
 bun js/ts-rs/src/cli.ts -i input.ts -o output.rs -t User,Post,Comment
 
-# Strict mode - fail on unresolvable types
+# Strict mode - fail on unresolvable types (default is to print warnings and use `serde_json::Value`)
 bun js/ts-rs/src/cli.ts -i input.ts -o output.rs --strict
 
 # Custom type mappings
@@ -60,6 +35,8 @@ bun js/ts-rs/src/cli.ts -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt
 - `-h, --help`: Show help
 
 ### Programmatic API
+
+todo Update
 
 ```typescript
 import { convert } from './js/ts-rs/src/index';
@@ -184,14 +161,7 @@ pub struct Product {
 }
 ```
 
-## Architecture
-
-### Components
-
-1. **TypeResolver** (`resolver.ts`): Parses TypeScript files using ts-morph and resolves types to an intermediate representation
-2. **RustGenerator** (`generator.ts`): Generates Rust code from the resolved types
-3. **CLI** (`cli.ts`): Command-line interface
-4. **Types** (`types.ts`): Type definitions for the intermediate representation
+## Internals
 
 ### Type Resolution Process
 
@@ -201,7 +171,7 @@ TypeScript AST → ts-morph Parser → TypeResolver → Intermediate Types → R
 
 ### Intermediate Representation
 
-Types are resolved to a discriminated union (`ResolvedType`) that includes:
+The intermediate representation types are resolved to a discriminated union (`ResolvedType`) that includes:
 
 - Primitives (string, number, boolean, null, undefined)
 - Arrays and tuples
@@ -215,12 +185,7 @@ Types are resolved to a discriminated union (`ResolvedType`) that includes:
 
 ### Warning System
 
-The resolver tracks cases where types fall back to `serde_json::Value`:
-
-- Internal TypeScript types (e.g., `Function`, `Symbol`)
-- Type parameters that can't be resolved to concrete types
-- Complex types that can't be represented in Rust
-- Types from TypeScript's standard library
+The resolver tracks cases where types fall back to `serde_json::Value` (Handling is not possible or unknown).
 
 In **strict mode** (`--strict`), these cases throw errors instead of warnings, except for:
 - Explicit `any` types (intentional fallback)
@@ -228,43 +193,17 @@ In **strict mode** (`--strict`), these cases throw errors instead of warnings, e
 
 ## Testing
 
-### Forward Tests (TypeScript → Rust → JSON → TypeScript)
+### Forward Tests (TypeScript → Rust (Generated), Rust Validation With JSON Data)
 
 ```bash
 cd rs
 cargo test --package test-driver -- --test-threads=1
 ```
 
-18 test cases covering:
-- Basic interfaces and type aliases
-- Nested objects and arrays
-- Enums (string and numeric)
-- Discriminated unions
-- Optional fields and nullable types
-- Tuples and records
-- Cross-package imports
-
-### Reverse Tests (TypeScript → Rust Binary → JSON → TypeScript)
+### Reverse Tests (TypeScript → Rust (Generated), Rust Data → JSON, JSON → TypeScript, Typescript Validation)
 
 ```bash
 cd rs
-cargo test --package reverse-test-driver -- --test-threads=1
-```
-
-5 test cases that:
-1. Generate Rust types from TypeScript
-2. Create a Rust binary that instantiates the types
-3. Serialize to JSON
-4. Verify the JSON matches expected output
-
-### Running All Tests
-
-```bash
-# Forward tests
-cd rs
-cargo test --package test-driver -- --test-threads=1
-
-# Reverse tests
 cargo test --package reverse-test-driver -- --test-threads=1
 ```
 
@@ -288,7 +227,6 @@ cargo test --package reverse-test-driver -- --test-threads=1
 
 ## Limitations
 
-- Generic types are not fully supported (will fall back to `serde_json::Value`)
-- Function types cannot be serialized (will fail or fall back to `serde_json::Value`)
+- Generic types are not supported on types not listed (will fall back to `serde_json::Value`)
 - Circular references may cause issues
 - Some complex TypeScript utility types (e.g., `Pick`, `Omit`) are not supported
