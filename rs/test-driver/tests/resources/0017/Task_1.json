@@ -1,0 +1,6 @@
+{
+  "id": "task-123",
+  "title": "Fix bug in authentication",
+  "assignedTo": "Developer",
+  "priority": "High"
+}

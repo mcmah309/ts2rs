@@ -9,8 +9,6 @@ use std::collections::{HashMap};
 const OUTPUT_DIR: &str = "/tmp/ts-rs-test-output";
 
 pub fn run(test_name: &str) {
-    let _ = fs::remove_file("../test-crate/src/main.rs");
-    let _ = fs::remove_file("../test-crate/src/generated.rs");
     let _ = fs::remove_dir_all(OUTPUT_DIR);
     fs::create_dir_all(OUTPUT_DIR).unwrap();
 

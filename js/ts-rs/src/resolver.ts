@@ -719,11 +719,24 @@ export class TypeResolver {
         const decl = symbol.getDeclarations()?.[0];
         if (decl) {
           const declSourceFile = decl.getSourceFile();
-          if (!declSourceFile.getFilePath().includes("node_modules")) {
-            this.project.addSourceFileAtPath(declSourceFile.getFilePath());
+          const filePath = declSourceFile.getFilePath();
+          
+          // Check if this is from node_modules but NOT a workspace package
+          // Workspace packages typically have their source files accessible
+          const isNodeModules = filePath.includes("node_modules");
+          const isTypeScriptLib = filePath.includes("node_modules/typescript/lib");
+          
+          // Try to resolve the type if it's not from TypeScript's lib
+          if (!isTypeScriptLib) {
+            // Add the source file to the project if not already added
+            if (!this.project.getSourceFile(filePath)) {
+              this.project.addSourceFileAtPath(filePath);
+            }
+            
+            // Try to resolve the type
             this.resolveTypeByName(declSourceFile, symbolName);
           } else {
-            // For node_modules types, return json_value
+            // For TypeScript lib types, return json_value
             return { kind: "json_value" };
           }
         }
@@ -782,6 +795,41 @@ export class TypeResolver {
 
   private resolveInlineUnionType(type: Type, sourceFile: SourceFile): ResolvedType {
     const unionTypes = type.getUnionTypes();
+
+    // Check if this is actually a named type alias (not an inline union)
+    const aliasSymbol = type.getAliasSymbol();
+    if (aliasSymbol) {
+      const typeName = aliasSymbol.getName();
+      
+      // This is a reference to a named type - resolve it properly
+      const decl = aliasSymbol.getDeclarations()?.[0];
+      if (decl) {
+        const declSourceFile = decl.getSourceFile();
+        const filePath = declSourceFile.getFilePath();
+        
+        // Add the source file and resolve the type
+        if (!this.project.getSourceFile(filePath)) {
+          this.project.addSourceFileAtPath(filePath);
+        }
+        
+        // Check if this is a generic type (has type arguments)
+        const typeArgs = type.getAliasTypeArguments();
+        if (typeArgs && typeArgs.length > 0) {
+          // For generic types, we can't easily instantiate them in Rust
+          // Fall through to handle as inline union
+        } else {
+          // Non-generic type alias - resolve it by name
+          this.resolveTypeByName(declSourceFile, typeName);
+          
+          // Return a reference to this type
+          return {
+            kind: "struct",  // Will be a union after resolution
+            name: typeName,
+            fields: [],
+          };
+        }
+      }
+    }
 
     // Check for T | null or T | undefined patterns (should become Option<T>)
     const nullOrUndefinedTypes = unionTypes.filter(
