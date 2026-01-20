@@ -18,6 +18,8 @@
       "typed-css-modules": "latest",
       "html-minifier-next": "latest",
       "web-resource-inliner": "latest",
+      "commander": "latest",
+      "ts-morph": "latest"
     }
   },
   "devDependencies": {

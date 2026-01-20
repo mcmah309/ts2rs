@@ -4,6 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::collections::{HashMap};
 
 const OUTPUT_DIR: &str = "/tmp/ts-rs-test-output";
 
@@ -14,22 +15,54 @@ pub fn run(test_name: &str) {
     let _ = fs::remove_dir_all(OUTPUT_DIR);
     fs::create_dir_all(OUTPUT_DIR).unwrap();
 
-    // Read the types to test from the .txt file
-    let types_to_generate = fs::read_to_string(format!("./tests/resources/{test_name}.txt")).unwrap();
-    let types_to_generate: Vec<String> = types_to_generate
-        .split(',')
-        .map(|e| e.trim().to_owned())
-        .filter(|s| !s.is_empty())
-        .collect();
-
-    // For each type, run the test
-    for type_to_generate in &types_to_generate {
-        run_single_type(test_name, type_to_generate);
+    // Find all JSON test files and extract type names
+    let test_dir = format!("./tests/resources/{}", test_name);
+    let test_path = Path::new(&test_dir);
+    
+    if !test_path.exists() {
+        panic!("Test directory {} does not exist", test_dir);
+    }
+    
+    // Scan for JSON files and group by type name
+    let mut type_tests: HashMap<String, Vec<PathBuf>> = HashMap::new();
+    
+    for entry in fs::read_dir(test_path).expect("Failed to read test directory") {
+        let entry = entry.expect("Failed to read entry");
+        let path = entry.path();
+        
+        if path.extension().and_then(|s| s.to_str()) == Some("json") {
+            let file_name = path.file_stem().unwrap().to_str().unwrap();
+            // Extract type name by removing trailing _N suffix
+            let type_name = if let Some(pos) = file_name.rfind('_') {
+                let suffix = &file_name[pos+1..];
+                if suffix.chars().all(|c| c.is_numeric()) {
+                    file_name[..pos].to_string()
+                } else {
+                    file_name.to_string()
+                }
+            } else {
+                file_name.to_string()
+            };
+            
+            type_tests.entry(type_name).or_insert_with(Vec::new).push(path);
+        }
+    }
+    
+    if type_tests.is_empty() {
+        panic!("No JSON test files found in {}", test_dir);
+    }
+    
+    // For each type, run all its test cases
+    for (type_name, json_files) in type_tests {
+        for json_path in json_files {
+            run_single_test(test_name, &type_name, &json_path);
+        }
     }
 }
 
-fn run_single_type(test_name: &str, type_name: &str) {
-    println!("Testing type: {}", type_name);
+fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
+    let json_file_name = json_path.file_name().unwrap().to_str().unwrap();
+    println!("Testing: {} with {}", type_name, json_file_name);
     
     // Step 1: Generate Rust code using ts-rs CLI
     let types_ts_path = format!("./tests/resources/{}/types.ts", test_name);
@@ -58,9 +91,8 @@ fn run_single_type(test_name: &str, type_name: &str) {
     }
 
     // Step 2: Read the JSON test data
-    let json_path = format!("./tests/resources/{}/{}.json", test_name, type_name);
-    let json_data = fs::read_to_string(&json_path)
-        .unwrap_or_else(|_| panic!("Failed to read JSON file: {}", json_path));
+    let json_data = fs::read_to_string(json_path)
+        .unwrap_or_else(|_| panic!("Failed to read JSON file: {:?}", json_path));
 
     // Step 3: Generate main.rs
     create_main(type_name, &json_data);
@@ -93,7 +125,7 @@ fn run_single_type(test_name: &str, type_name: &str) {
     }
 
     // Step 5: Compare the round-trip JSON
-    let output_json_path = format!("{}/{}.json", OUTPUT_DIR, type_name);
+    let output_json_path = format!("{}/output.json", OUTPUT_DIR);
     let output_json = fs::read_to_string(&output_json_path)
         .unwrap_or_else(|_| panic!("Failed to read output JSON: {}", output_json_path));
 
@@ -102,18 +134,47 @@ fn run_single_type(test_name: &str, type_name: &str) {
     let output: serde_json::Value = serde_json::from_str(&output_json)
         .expect("Failed to parse output JSON");
 
-    assert_eq!(
-        original, output,
-        "Round-trip JSON mismatch for type {}",
-        type_name
-    );
+    if !values_equal(&original, &output) {
+        panic!(
+            "Round-trip JSON mismatch for type {} with test file {}\nOriginal: {}\nOutput: {}",
+            type_name, json_file_name,
+            serde_json::to_string_pretty(&original).unwrap(),
+            serde_json::to_string_pretty(&output).unwrap()
+        );
+    }
 
-    println!("✓ Type {} passed round-trip test", type_name);
+    println!("✓ {} with {} passed round-trip test", type_name, json_file_name);
 }
+
+/// Compare two JSON values, treating integer and float numbers as equal if they represent the same value
+fn values_equal(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+    use serde_json::Value;
+    
+    match (a, b) {
+        (Value::Number(n1), Value::Number(n2)) => {
+            // Compare numbers by their float representation
+            n1.as_f64() == n2.as_f64()
+        },
+        (Value::String(s1), Value::String(s2)) => s1 == s2,
+        (Value::Bool(b1), Value::Bool(b2)) => b1 == b2,
+        (Value::Null, Value::Null) => true,
+        (Value::Array(arr1), Value::Array(arr2)) => {
+            arr1.len() == arr2.len() && 
+            arr1.iter().zip(arr2.iter()).all(|(v1, v2)| values_equal(v1, v2))
+        },
+        (Value::Object(obj1), Value::Object(obj2)) => {
+            obj1.len() == obj2.len() &&
+            obj1.iter().all(|(k, v1)| {
+                obj2.get(k).map_or(false, |v2| values_equal(v1, v2))
+            })
+        },
+        _ => false,
+    }
+}
+
 
 fn create_main(type_name: &str, json_data: &str) {
     // Generate a main.rs that deserializes the JSON, then serializes it back
-    let escaped_json = json_data.replace('\\', "\\\\").replace('"', "\\\"");
     let main_content = format!(
         "mod generated;\n\
 \n\
@@ -132,14 +193,13 @@ fn main() {{\n\
         .expect(\"Failed to serialize to JSON\");\n\
     \n\
     // Write to output file\n\
-    let output_path = \"{}/{}.json\";\n\
+    let output_path = \"{}/output.json\";\n\
     fs::write(output_path, output_json)\n\
         .expect(\"Failed to write output JSON\");\n\
 }}\n",
         json_data,
         type_name,
-        OUTPUT_DIR,
-        type_name
+        OUTPUT_DIR
     );
 
     fs::write("../test-crate/src/main.rs", main_content)

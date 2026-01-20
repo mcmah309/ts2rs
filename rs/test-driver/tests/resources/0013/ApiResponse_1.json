@@ -1,0 +1,5 @@
+{
+  "success": true,
+  "data": {"userId": 123, "name": "Alice"},
+  "timestamp": "2026-01-20T10:00:00Z"
+}

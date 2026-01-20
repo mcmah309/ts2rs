@@ -1,0 +1,14 @@
+{
+  "tables": {
+    "users": {
+      "name": "users",
+      "columns": ["id", "name", "email"],
+      "primaryKey": "id"
+    },
+    "posts": {
+      "name": "posts",
+      "columns": ["id", "title", "content", "authorId"],
+      "primaryKey": "id"
+    }
+  }
+}

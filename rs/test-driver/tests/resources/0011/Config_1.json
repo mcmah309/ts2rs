@@ -1,0 +1,15 @@
+{
+  "settings": {
+    "theme": "dark",
+    "language": "en",
+    "timezone": "UTC"
+  },
+  "metadata": {
+    "version": 2,
+    "revision": 10
+  },
+  "flags": {
+    "enableFeatureX": true,
+    "debugMode": false
+  }
+}

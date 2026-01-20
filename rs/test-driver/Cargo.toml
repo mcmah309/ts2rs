@@ -2,7 +2,7 @@
 name = "test-driver"
 # description = ""
 version = "0.0.1"
-edition = "2024"
+edition = "2021"
 # repository = ""
 # license = "" # e.g. `Apache-2.0`
 # categories = []

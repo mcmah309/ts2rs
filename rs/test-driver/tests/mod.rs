@@ -39,3 +39,28 @@ fn test_0007() {
 fn test_0008() {
     run("0008");
 }
+
+#[test]
+fn test_0009() {
+    run("0009");
+}
+
+#[test]
+fn test_0010() {
+    run("0010");
+}
+
+#[test]
+fn test_0011() {
+    run("0011");
+}
+
+#[test]
+fn test_0012() {
+    run("0012");
+}
+
+#[test]
+fn test_0013() {
+    run("0013");
+}
