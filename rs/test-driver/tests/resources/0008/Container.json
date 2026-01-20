@@ -1,0 +1,12 @@
+{
+  "id": "container-123",
+  "response": {
+    "success": true,
+    "data": "Operation completed",
+    "timestamp": 1737417600
+  },
+  "shape": {
+    "type": "circle",
+    "radius": 5.5
+  }
+}

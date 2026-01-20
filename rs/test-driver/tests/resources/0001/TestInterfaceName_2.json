@@ -1,0 +1,10 @@
+{
+  "name": "Jordan Smith",
+  "age": 34,
+  "isActive": true,
+  "data": {
+    "roles": ["admin", "editor"],
+    "version": 1.2
+  },
+  "metadata": "Source: Internal Database"
+}

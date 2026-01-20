@@ -11,6 +11,7 @@ edition = "2024"
 # rust-version = "" # Min required rust version
 
 [dependencies]
+serde_json = "1"
 
 [dev-dependencies]
 assert_cmd = "2"

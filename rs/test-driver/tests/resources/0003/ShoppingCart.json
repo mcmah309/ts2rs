@@ -1,0 +1,21 @@
+{
+  "items": [
+    {
+      "id": "prod-001",
+      "name": "Laptop",
+      "price": 999.99,
+      "inStock": true,
+      "categories": ["electronics", "computers"]
+    },
+    {
+      "id": "prod-002",
+      "name": "Mouse",
+      "price": 29.99,
+      "inStock": true,
+      "categories": ["electronics", "accessories"]
+    }
+  ],
+  "totalPrice": 1029.98,
+  "discount": 50.0,
+  "tags": ["sale", "tech", "bundle"]
+}

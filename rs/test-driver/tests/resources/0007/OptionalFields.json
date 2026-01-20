@@ -1,0 +1,6 @@
+{
+  "requiredString": "test",
+  "requiredNumber": 42,
+  "emptyArray": [],
+  "nullableField": null
+}

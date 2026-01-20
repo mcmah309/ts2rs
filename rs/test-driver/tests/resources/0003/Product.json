@@ -1,0 +1,7 @@
+{
+  "id": "prod-123",
+  "name": "Wireless Keyboard",
+  "price": 79.99,
+  "inStock": false,
+  "categories": ["electronics", "peripherals", "keyboards"]
+}

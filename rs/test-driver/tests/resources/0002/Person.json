@@ -1,0 +1,14 @@
+{
+  "id": 12345,
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "address": {
+    "street": "123 Main St",
+    "city": "Springfield",
+    "state": "IL",
+    "zipCode": "62701",
+    "country": "USA"
+  },
+  "phoneNumbers": ["+1-555-0100", "+1-555-0101"]
+}

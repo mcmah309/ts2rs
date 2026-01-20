@@ -1,0 +1,8 @@
+{
+  "values": ["temperature", 72.5],
+  "metadata": {
+    "unit": "fahrenheit",
+    "sensor": "TMP-001",
+    "timestamp": 1737417600
+  }
+}

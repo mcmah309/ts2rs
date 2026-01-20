@@ -247,6 +247,7 @@ version = "0.0.1"
 dependencies = [
  "assert_cmd",
  "predicates",
+ "serde_json",
 ]
 
 [[package]]

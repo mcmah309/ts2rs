@@ -1,5 +1,0 @@
-mod generated;
-
-fn main() {
-
-}
