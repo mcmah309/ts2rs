@@ -1,4 +1,4 @@
 [workspace]
 resolver = "3"
-members = ["rs/test-crate","rs/test-driver"]
+members = ["rs/test-crate","rs/test-driver","rs/reverse-test-driver","rs/reverse-test-bin"]
 exclude = []

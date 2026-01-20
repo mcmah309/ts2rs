@@ -1,0 +1,15 @@
+{
+  "title": "Implement authentication",
+  "assignedTo": "admin",
+  "priority": "3",
+  "completed": false,
+  "test1": {
+    "data1": "test string",
+    "data2": 42.5,
+    "dataFromOtherPackage": "hello"
+  },
+  "test2": {
+    "packages": ["package1", "package2"],
+    "nohoist": ["**/@types/**"]
+  }
+}

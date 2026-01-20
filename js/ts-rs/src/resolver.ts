@@ -650,6 +650,100 @@ export class TypeResolver {
       };
     }
 
+    // Check for object types with alias symbols (e.g., PackageJson.WorkspaceConfig)
+    // This should be checked before generic symbol handling
+    if (type.isObject() && type.getAliasSymbol()) {
+      const aliasSymbol = type.getAliasSymbol();
+      const aliasName = aliasSymbol.getName();
+      const properties = type.getProperties();
+      
+      if (properties.length > 0) {
+        const decl = aliasSymbol.getDeclarations()?.[0];
+        
+        if (decl) {
+          const declSourceFile = decl.getSourceFile();
+          const filePath = declSourceFile.getFilePath();
+          
+          // For types from node_modules, we need to check if this is a top-level
+          // type declaration or a nested type (like PackageJson.WorkspaceConfig)
+          if (filePath.includes("node_modules") && !filePath.includes("node_modules/typescript/lib")) {
+            // Add the source file if not already added
+            if (!this.project.getSourceFile(filePath)) {
+              this.project.addSourceFileAtPath(filePath);
+            }
+            
+            // Try to find if this is a top-level type
+            const typeDecl = this.findTypeDeclaration(declSourceFile, aliasName);
+            
+            if (typeDecl) {
+              // It's a top-level type, resolve it by name
+              this.resolveTypeByName(declSourceFile, aliasName);
+              
+              return {
+                kind: "struct",
+                name: aliasName,
+                fields: [],
+              };
+            } else {
+              // It's a nested type (like PackageJson.WorkspaceConfig)
+              // Create a unique name and collect it as a named type
+              const uniqueName = aliasName;
+              
+              // Check if already collected
+              if (!this.collectedTypes.has(uniqueName)) {
+                const fields: StructField[] = [];
+
+                for (const prop of properties) {
+                  const propDecl = prop.getDeclarations()[0];
+                  let isOptional = false;
+                  let propType = prop.getTypeAtLocation(sourceFile);
+
+                  if (propDecl && Node.isPropertySignature(propDecl)) {
+                    isOptional = propDecl.hasQuestionToken();
+                  }
+
+                  let resolvedType = this.resolveType(propType, sourceFile);
+
+                  if (isOptional && resolvedType.kind !== "option") {
+                    resolvedType = {
+                      kind: "option",
+                      innerType: resolvedType,
+                    };
+                  }
+
+                  fields.push({
+                    name: prop.getName(),
+                    type: resolvedType,
+                    optional: isOptional,
+                  });
+                }
+
+                // Add to collected types
+                const structType: StructType = {
+                  kind: "struct",
+                  name: uniqueName,
+                  fields,
+                };
+
+                this.collectedTypes.set(uniqueName, {
+                  name: uniqueName,
+                  type: structType,
+                  sourceFile: filePath,
+                });
+              }
+
+              // Return a reference to this type
+              return {
+                kind: "struct",
+                name: uniqueName,
+                fields: [],
+              };
+            }
+          }
+        }
+      }
+    }
+
     // Handle type references (named types)
     const symbol = type.getSymbol() || type.getAliasSymbol();
     if (symbol) {
@@ -752,6 +846,7 @@ export class TypeResolver {
     // Handle object types (inline objects)
     if (type.isObject() && !this.isBuiltInType(type)) {
       const properties = type.getProperties();
+      
       if (properties.length > 0) {
         const fields: StructField[] = [];
 
