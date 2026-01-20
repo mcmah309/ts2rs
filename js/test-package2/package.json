@@ -25,7 +25,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "test-package1": "workspace:*"
+    "test-package1": "workspace:*",
+    "type-fest": "^5.4.1"
   },
   "devDependencies": {
     "@types/bun": "catalog:"
