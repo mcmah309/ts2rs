@@ -1,4 +1,3 @@
-/// <reference types="bun" />
 /**
  * TypeScript type resolver using ts-morph
  * Traverses TypeScript types and resolves them to intermediate representation
@@ -712,8 +711,8 @@ export class TypeResolver {
 
     // Check for object types with alias symbols (e.g., PackageJson.WorkspaceConfig)
     // This should be checked before generic symbol handling
-    if (type.isObject() && type.getAliasSymbol()) {
-      const aliasSymbol = type.getAliasSymbol();
+    const aliasSymbol = type.getAliasSymbol();
+    if (type.isObject() && aliasSymbol) {
       const aliasName = aliasSymbol.getName();
       const properties = type.getProperties();
       
@@ -748,8 +747,7 @@ export class TypeResolver {
               // It's a nested type (like PackageJson.WorkspaceConfig)
               // Create a unique name and collect it as a named type
               const uniqueName = aliasName;
-              
-              // Check if already collected
+
               if (!this.collectedTypes.has(uniqueName)) {
                 const fields: StructField[] = [];
 
@@ -778,7 +776,6 @@ export class TypeResolver {
                   });
                 }
 
-                // Add to collected types
                 const structType: StructType = {
                   kind: "struct",
                   name: uniqueName,
@@ -792,7 +789,6 @@ export class TypeResolver {
                 });
               }
 
-              // Return a reference to this type
               return {
                 kind: "struct",
                 name: uniqueName,
@@ -863,7 +859,6 @@ export class TypeResolver {
         );
       }
 
-      // Skip internal TypeScript types
       if (this.isInternalType(symbolName)) {
         return this.handleValueFallback(
           `Internal TypeScript type '${symbolName}' cannot be converted`,
@@ -878,19 +873,14 @@ export class TypeResolver {
         if (decl) {
           const declSourceFile = decl.getSourceFile();
           const filePath = declSourceFile.getFilePath();
-          
-          // Try to resolve the type if it's not from TypeScript's lib
+
           if (!this.isFromTypeScriptLib(filePath)) {
-            // Add the source file to the project if not already added
             if (!this.project.getSourceFile(filePath)) {
               this.project.addSourceFileAtPath(filePath);
             }
-            
-            // Try to resolve the type
+
             this.resolveTypeByName(declSourceFile, symbolName);
-            
-            // Check if the type was actually collected
-            // If not, it means it couldn't be resolved (e.g., union with unresolvable types)
+
             if (!this.collectedTypes.has(symbolName)) {
               return this.handleValueFallback(
                 `Type '${symbolName}' could not be fully resolved`,
@@ -987,13 +977,11 @@ export class TypeResolver {
       if (decl) {
         const declSourceFile = decl.getSourceFile();
         const filePath = declSourceFile.getFilePath();
-        
-        // Add the source file and resolve the type
+
         if (!this.project.getSourceFile(filePath)) {
           this.project.addSourceFileAtPath(filePath);
         }
-        
-        // Check if this is a generic type (has type arguments)
+
         const typeArgs = type.getAliasTypeArguments();
         if (typeArgs && typeArgs.length > 0) {
           // For generic types, we can't easily instantiate them in Rust
@@ -1001,8 +989,7 @@ export class TypeResolver {
         } else {
           // Non-generic type alias - resolve it by name
           this.resolveTypeByName(declSourceFile, typeName);
-          
-          // Check if the type was actually collected
+
           if (!this.collectedTypes.has(typeName)) {
             return this.handleValueFallback(
               `Type '${typeName}' could not be fully resolved`,
@@ -1010,8 +997,7 @@ export class TypeResolver {
               sourceFile.getFilePath(),
             );
           }
-          
-          // Return a reference to this type
+
           return {
             kind: "struct",  // Will be a union after resolution
             name: typeName,
@@ -1045,11 +1031,7 @@ export class TypeResolver {
       };
     }
 
-    // Check for literal union (string enum-like)
     if (this.isLiteralUnion(unionTypes)) {
-      // All string literals - this could be an inline enum
-      // Return as json_value since we can't create an anonymous enum inline
-      // The caller should handle this case appropriately
       return this.handleValueFallback(
         "Inline literal union cannot be converted (must be a named type)",
         type,
@@ -1057,7 +1039,6 @@ export class TypeResolver {
       );
     }
 
-    // For other unions, fallback to json_value
     return this.handleValueFallback(
       "Union type could not be resolved",
       type,
@@ -1112,6 +1093,9 @@ export class TypeResolver {
     return filePath.includes("node_modules/typescript/lib");
   }
 
+  /**
+   * Check for literal union (string enum-like)
+   */
   private isLiteralUnion(types: Type[]): boolean {
     return types.every(
       (t) =>
@@ -1334,7 +1318,6 @@ export class TypeResolver {
 
       const resolvedType = this.resolveType(t, sourceFile);
 
-      // Check if this variant couldn't be resolved
       if (resolvedType.kind === "json_value") {
         hasUnresolvableType = true;
       }
@@ -1345,7 +1328,6 @@ export class TypeResolver {
       });
     }
 
-    // If any variant is unresolvable, don't generate the union
     if (hasUnresolvableType) {
       return null;
     }

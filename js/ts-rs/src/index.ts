@@ -1,4 +1,3 @@
-/// <reference types="bun" />
 /**
  * ts-to-rs - TypeScript to Rust type converter
  *

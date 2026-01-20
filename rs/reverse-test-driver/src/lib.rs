@@ -10,7 +10,6 @@ const OUTPUT_DIR: &str = "/tmp/reverse-test-output";
 const RUST_TEST_BIN_DIR: &str = "../reverse-test-bin";
 
 pub fn run_reverse_test(test_name: &str) {
-    // Clean up
     let _ = fs::remove_dir_all(OUTPUT_DIR);
     let _ = fs::remove_dir_all(format!("{}/src", RUST_TEST_BIN_DIR));
     fs::create_dir_all(OUTPUT_DIR).unwrap();
@@ -23,7 +22,6 @@ pub fn run_reverse_test(test_name: &str) {
         panic!("Test directory {} does not exist", test_dir);
     }
 
-    // Read the expected values JSON file
     let expected_json_path = test_path.join("expected.json");
     if !expected_json_path.exists() {
         panic!("expected.json not found in {}", test_dir);
@@ -34,7 +32,7 @@ pub fn run_reverse_test(test_name: &str) {
 
     println!("Running reverse test for: {}", test_name);
 
-    // Step 1: Generate Rust types from TypeScript
+    // Generate Rust types from TypeScript
     let types_ts_path = test_path.join("types.ts");
     let generated_rs_path = format!("{}/src/generated.rs", RUST_TEST_BIN_DIR);
     
@@ -63,17 +61,14 @@ pub fn run_reverse_test(test_name: &str) {
 
     println!("✓ Generated Rust types for {}", type_name);
 
-    // Step 2: Read the Rust test code template
     let rust_test_template_path = test_path.join("rust_test.rs");
     let rust_test_code = if rust_test_template_path.exists() {
         fs::read_to_string(&rust_test_template_path)
             .expect("Failed to read rust_test.rs")
     } else {
-        // Generate default test code
         generate_default_rust_test(&type_name, &expected_json)
     };
 
-    // Step 3: Create the Rust test binary
     let main_rs_content = format!(
         r#"mod generated;
 use generated::*;
@@ -97,7 +92,6 @@ fn main() {{
 
     println!("✓ Created Rust test binary");
 
-    // Step 4: Compile the Rust binary
     let compile_output = Command::new("cargo")
         .args(["build"])
         .current_dir(RUST_TEST_BIN_DIR)
@@ -111,8 +105,7 @@ fn main() {{
 
     println!("✓ Compiled Rust test binary");
 
-    // Step 5: Run the Rust binary to generate JSON
-    // The binary is in the workspace target directory
+    // Run the Rust binary to generate JSON
     let workspace_root = Path::new(".").join("../..");
     let binary_path = workspace_root.join("target/debug/reverse-test-bin");
     let binary_path_abs = std::env::current_dir()
@@ -133,7 +126,7 @@ fn main() {{
 
     println!("✓ Executed Rust test binary");
 
-    // Step 6: Verify the output by importing into TypeScript and type-checking
+    // Verify the output by importing into TypeScript and type-checking
     let types_ts_abs = std::env::current_dir()
         .unwrap()
         .join(&types_ts_path)
@@ -267,7 +260,6 @@ if (deepEqual(expected, actual)) {{
 }
 
 fn extract_type_name_from_json(json: &str) -> String {
-    // Parse JSON to find the __type field or infer from structure
     let value: serde_json::Value = serde_json::from_str(json)
         .expect("Failed to parse expected.json");
     
@@ -279,7 +271,6 @@ fn extract_type_name_from_json(json: &str) -> String {
 }
 
 fn generate_default_rust_test(type_name: &str, expected_json: &str) -> String {
-    // Escape the JSON string for embedding in Rust code
     let escaped_json = expected_json.replace("\\", "\\\\").replace("\"", "\\\"");
     
     format!(

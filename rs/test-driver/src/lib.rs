@@ -171,17 +171,15 @@ use std::fs;\n\
 fn main() {{\n\
     let json_data = r#\"{json_data}\"#;\n\
     \n\
-    // Deserialize from JSON to Rust type\n\
     let value: {type_name} = serde_json::from_str(json_data)\n\
         .expect(\"Failed to deserialize JSON\");\n\
     \n\
-    // Serialize back to JSON\n\
     let output_json = serde_json::to_string(&value)\n\
         .expect(\"Failed to serialize to JSON\");\n\
     \n\
     let lossless_test: {type_name} = serde_json::from_str(&output_json).expect(\"Failed to re-dserialize JSON\");\n\
     \n\
-    if (lossless_test != value) {{\n\
+    if lossless_test != value {{\n\
         panic!(\"Serialization is not lossless\nOriginal: {{:?}}\nAfter: {{:?}}\", value, lossless_test);\n\
     }}\n\
     \n\

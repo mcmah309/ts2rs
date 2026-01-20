@@ -11,17 +11,15 @@ let json_data = r#"{
 }
 "#;
 
-// Deserialize from JSON to Rust type
 let value: DataContainer = serde_json::from_str(json_data)
 .expect("Failed to deserialize JSON");
 
-// Serialize back to JSON
 let output_json = serde_json::to_string(&value)
 .expect("Failed to serialize to JSON");
 
 let lossless_test: DataContainer = serde_json::from_str(&output_json).expect("Failed to re-dserialize JSON");
 
-if (lossless_test != value) {
+if lossless_test != value {
 panic!("Serialization is not lossless
 Original: {:?}
 After: {:?}", value, lossless_test);
