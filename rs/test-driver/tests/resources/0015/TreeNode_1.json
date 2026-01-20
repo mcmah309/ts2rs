@@ -1,0 +1,16 @@
+{
+  "value": "root",
+  "children": [
+    {
+      "value": "child1",
+      "children": [],
+      "metadata": {"level": 1}
+    },
+    {
+      "value": "child2",
+      "children": [
+        {"value": "grandchild", "children": []}
+      ]
+    }
+  ]
+}

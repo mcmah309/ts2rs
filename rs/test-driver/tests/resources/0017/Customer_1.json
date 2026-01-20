@@ -1,0 +1,14 @@
+{
+  "id": "cust123",
+  "createdAt": "2026-01-20T10:00:00Z",
+  "updatedAt": "2026-01-20T10:00:00Z",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "address": {
+    "street": "123 Main St",
+    "city": "New York",
+    "country": "USA",
+    "postalCode": "10001"
+  },
+  "status": "active"
+}

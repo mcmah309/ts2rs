@@ -24,9 +24,6 @@ program
     "-t, --types <names>",
     "Comma-separated list of type names to convert (defaults to all exported types)",
   )
-  .option("--no-serde", "Disable serde attribute generation")
-  .option("--no-camel-case", "Disable camelCase renaming in serde")
-  .option("--no-skip-none", "Disable skip_serializing_if for Option fields")
   .option(
     "-m, --mapping <mappings>",
     "Custom type mappings in format TypeScriptName:RustName,... (comma-separated)",
@@ -60,9 +57,6 @@ program
         entryFile: inputPath,
         outputPath,
         typeNames,
-        generateSerdeAttributes: options.serde !== false,
-        useCamelCase: options.camelCase !== false,
-        skipSerializingNone: options.skipNone !== false,
         customTypeMappings,
       });
 

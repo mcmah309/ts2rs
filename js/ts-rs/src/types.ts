@@ -17,7 +17,8 @@ export type ResolvedType =
   | EnumType
   | UnionType
   | LiteralType
-  | JsonValueType;
+  | JsonValueType
+  | TypeAliasType;
 
 export interface PrimitiveType {
   kind: "primitive";
@@ -27,6 +28,18 @@ export interface PrimitiveType {
 export interface ArrayType {
   kind: "array";
   elementType: ResolvedType;
+}
+
+export interface TupleType {
+  kind: "tuple";
+  elements: ResolvedType[];
+}
+
+export interface TypeAliasType {
+  kind: "type_alias";
+  name: string;
+  aliasedType: ResolvedType;
+  documentation?: string;
 }
 
 export interface TupleType {
@@ -90,12 +103,14 @@ export interface UnionType {
   name: string;
   variants: UnionVariant[];
   documentation?: string;
+  discriminator?: string; // Field name used for tagging (e.g., "type")
 }
 
 export interface UnionVariant {
   name: string;
   type: ResolvedType | null;
   documentation?: string;
+  discriminatorValue?: string; // Value of the discriminator for this variant
 }
 
 export interface LiteralType {
@@ -112,7 +127,7 @@ export interface JsonValueType {
  */
 export interface CollectedType {
   name: string;
-  type: StructType | EnumType | UnionType;
+  type: StructType | EnumType | UnionType | TypeAliasType;
   sourceFile: string;
 }
 
@@ -134,24 +149,6 @@ export interface ConversionOptions {
    * Output file path for generated Rust code
    */
   outputPath?: string;
-
-  /**
-   * Whether to generate serde attributes
-   * @default true
-   */
-  generateSerdeAttributes?: boolean;
-
-  /**
-   * Whether to use camelCase for field names in serde
-   * @default true
-   */
-  useCamelCase?: boolean;
-
-  /**
-   * Whether to add skip_serializing_if for Option fields
-   * @default true
-   */
-  skipSerializingNone?: boolean;
 
   /**
    * Custom type mappings from TypeScript type names to Rust type names

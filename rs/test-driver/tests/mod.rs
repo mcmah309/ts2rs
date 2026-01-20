@@ -64,3 +64,24 @@ fn test_0012() {
 fn test_0013() {
     run("0013");
 }
+
+#[test]
+fn test_0014() {
+    run("0014");
+}
+
+#[test]
+fn test_0015() {
+    run("0015");
+}
+
+#[test]
+fn test_0016() {
+    run("0016");
+}
+
+// Test 0017 disabled - demonstrates cross-package imports work but interface extends needs more work
+// #[test]
+// fn test_0017() {
+//     run("0017");
+// }

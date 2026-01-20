@@ -1,0 +1,19 @@
+{
+  "name": "root",
+  "isDirectory": true,
+  "children": [
+    {
+      "name": "file.txt",
+      "isDirectory": false,
+      "size": 1024,
+      "permissions": {"read": true, "write": true, "execute": false}
+    },
+    {
+      "name": "subdir",
+      "isDirectory": true,
+      "children": [],
+      "permissions": {"read": true, "write": true, "execute": true}
+    }
+  ],
+  "permissions": {"read": true, "write": true, "execute": true}
+}

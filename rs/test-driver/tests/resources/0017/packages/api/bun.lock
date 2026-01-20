@@ -1,0 +1,15 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "@test/api",
+      "dependencies": {
+        "@test/shared": "file:../shared",
+      },
+    },
+  },
+  "packages": {
+    "@test/shared": ["@test/shared@file:../shared", {}],
+  }
+}

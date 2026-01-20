@@ -1,0 +1,10 @@
+{
+  "result": {
+    "ok": false,
+    "error": {
+      "message": "Not found",
+      "code": 404
+    }
+  },
+  "timestamp": "2026-01-20T10:01:00Z"
+}

@@ -1,0 +1,13 @@
+{
+  "users": [
+    {"id": "1", "username": "alice", "email": "alice@example.com", "roles": ["admin", "user"]},
+    {"id": "2", "username": "bob", "email": "bob@example.com", "roles": ["user"]}
+  ],
+  "metadata": {
+    "total": 100,
+    "pageSize": 10,
+    "currentPage": 1,
+    "hasNext": true,
+    "hasPrevious": false
+  }
+}

@@ -182,24 +182,27 @@ use generated::*;\n\
 use std::fs;\n\
 \n\
 fn main() {{\n\
-    let json_data = r#\"{}\"#;\n\
+    let json_data = r#\"{json_data}\"#;\n\
     \n\
     // Deserialize from JSON to Rust type\n\
-    let value: {} = serde_json::from_str(json_data)\n\
+    let value: {type_name} = serde_json::from_str(json_data)\n\
         .expect(\"Failed to deserialize JSON\");\n\
     \n\
     // Serialize back to JSON\n\
     let output_json = serde_json::to_string(&value)\n\
         .expect(\"Failed to serialize to JSON\");\n\
     \n\
+    let lossless_test: {type_name} = serde_json::from_str(&output_json).expect(\"Failed to re-dserialize JSON\");\n\
+    \n\
+    if (lossless_test != value) {{\n\
+        panic!(\"Serialization is not lossless\nOriginal: {{:?}}\nAfter: {{:?}}\", value, lossless_test);\n\
+    }}\n\
+    \n\
     // Write to output file\n\
-    let output_path = \"{}/output.json\";\n\
+    let output_path = \"{OUTPUT_DIR}/output.json\";\n\
     fs::write(output_path, output_json)\n\
         .expect(\"Failed to write output JSON\");\n\
-}}\n",
-        json_data,
-        type_name,
-        OUTPUT_DIR
+}}\n"
     );
 
     fs::write("../test-crate/src/main.rs", main_content)

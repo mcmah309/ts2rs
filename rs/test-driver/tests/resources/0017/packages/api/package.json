@@ -1,0 +1,8 @@
+{
+  "name": "@test/api",
+  "version": "1.0.0",
+  "main": "types.ts",
+  "dependencies": {
+    "@test/shared": "file:../shared"
+  }
+}

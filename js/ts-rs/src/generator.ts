@@ -11,6 +11,7 @@ import type {
   ConversionOptions,
   ConversionResult,
   StructField,
+  TypeAliasType,
 } from "./types";
 import { TypeConversionError } from "./types";
 
@@ -39,7 +40,7 @@ export class RustGenerator {
 
     // Add necessary imports
     lines.push("use serde::{Deserialize, Serialize};");
-    
+
     // Check if we need HashMap or HashSet
     const needsHashMap = this.checkNeedsHashMap(collectedTypes);
     const needsHashSet = this.checkNeedsHashSet(collectedTypes);
@@ -235,6 +236,8 @@ export class RustGenerator {
         return this.generateEnum(type);
       case "union":
         return this.generateUnion(type);
+      case "type_alias":
+        return this.generateTypeAlias(type);
       default: {
         const exhaustiveCheck: never = type;
         throw new TypeConversionError(
@@ -255,14 +258,9 @@ export class RustGenerator {
     }
 
     // Add derive macros
-    lines.push("#[derive(Debug, Clone, Serialize, Deserialize)]");
+    lines.push("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
 
-    // Add serde attributes
-    if (this.options.generateSerdeAttributes !== false) {
-      if (this.options.useCamelCase !== false) {
-        lines.push('#[serde(rename_all = "camelCase")]');
-      }
-    }
+    lines.push('#[serde(rename_all = "camelCase")]');
 
     // Generate struct definition
     const typeParams = type.typeParameters ? `<${type.typeParameters.join(", ")}>` : "";
@@ -289,17 +287,15 @@ export class RustGenerator {
     // Add serde attributes for optional fields
     if (
       field.optional &&
-      field.type.kind === "option" &&
-      this.options.skipSerializingNone !== false
+      field.type.kind === "option"
     ) {
       lines.push('#[serde(skip_serializing_if = "Option::is_none")]');
     }
 
     // Handle field name conversion
     const rustFieldName = this.toSnakeCase(field.name);
-    
-    // Add rename attribute if the rust name differs from the original
-    if (rustFieldName !== field.name && this.options.useCamelCase === false) {
+
+    if (rustFieldName !== field.name) {
       lines.push(`#[serde(rename = "${field.name}")]`);
     }
 
@@ -318,12 +314,11 @@ export class RustGenerator {
     }
 
     // Add derive macros
-    lines.push("#[derive(Debug, Clone, Serialize, Deserialize)]");
+    lines.push("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
 
-    // For numeric enums, add repr attribute
-    if (!type.isStringEnum) {
-      lines.push("#[repr(u32)]");
-    }
+    // Note: We don't use #[repr(u32)] for numeric enums because serde doesn't 
+    // support automatic numeric serialization without the serde_repr crate.
+    // Instead, we serialize all enums as strings for consistency.
 
     lines.push(`pub enum ${type.name} {`);
 
@@ -332,11 +327,14 @@ export class RustGenerator {
         lines.push("    " + this.formatDocComment(variant.documentation));
       }
 
-      if (type.isStringEnum && typeof variant.value === "string") {
+      // For both string and numeric enums, use string-based serialization
+      if (typeof variant.value === "string") {
         lines.push(`    #[serde(rename = "${variant.value}")]`);
         lines.push(`    ${variant.name},`);
-      } else if (!type.isStringEnum && typeof variant.value === "number") {
-        lines.push(`    ${variant.name} = ${variant.value},`);
+      } else if (typeof variant.value === "number") {
+        // Serialize numeric enums using their numeric value as a string
+        lines.push(`    #[serde(rename = "${variant.value}")]`);
+        lines.push(`    ${variant.name},`);
       } else {
         lines.push(`    ${variant.name},`);
       }
@@ -356,8 +354,18 @@ export class RustGenerator {
     }
 
     // Add derive macros
-    lines.push("#[derive(Debug, Clone, Serialize, Deserialize)]");
-    lines.push("#[serde(untagged)]");
+    lines.push("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
+
+    // Use tagged representation only if we have a string discriminator
+    // (serde's tag attribute only works with strings)
+    const hasStringDiscriminator = type.discriminator &&
+      type.variants.every(v => typeof v.discriminatorValue === "string");
+
+    if (hasStringDiscriminator) {
+      lines.push(`#[serde(tag = "${type.discriminator}")]`);
+    } else {
+      lines.push("#[serde(untagged)]");
+    }
 
     lines.push(`pub enum ${type.name} {`);
 
@@ -366,13 +374,18 @@ export class RustGenerator {
         lines.push("    " + this.formatDocComment(variant.documentation));
       }
 
+      // Add rename attribute for discriminated unions
+      if (type.discriminator && variant.discriminatorValue) {
+        lines.push(`    #[serde(rename = "${variant.discriminatorValue}")]`);
+      }
+
       if (variant.type === null) {
         lines.push(`    ${variant.name},`);
       } else if (variant.type.kind === "struct" && variant.type.fields.length > 0) {
         // Inline struct variant
         lines.push(`    ${variant.name} {`);
         for (const field of variant.type.fields) {
-          const fieldLines = this.generateStructField(field);
+          const fieldLines = this.generateUnionVariantField(field);
           lines.push(...fieldLines.map((l) => "        " + l));
         }
         lines.push("    },");
@@ -385,6 +398,49 @@ export class RustGenerator {
     lines.push("}");
 
     return lines.join("\n");
+  }
+
+  private generateTypeAlias(type: TypeAliasType): string {
+    const lines: string[] = [];
+
+    // Add documentation
+    if (type.documentation) {
+      lines.push(this.formatDocComment(type.documentation));
+    }
+
+    const rustType = this.resolvedTypeToRust(type.aliasedType);
+    lines.push(`pub type ${type.name} = ${rustType};`);
+
+    return lines.join("\n");
+  }
+
+  private generateUnionVariantField(field: StructField): string[] {
+    const lines: string[] = [];
+
+    // Add documentation
+    if (field.documentation) {
+      lines.push(this.formatDocComment(field.documentation));
+    }
+
+    // Add serde attributes for optional fields
+    if (
+      field.optional &&
+      field.type.kind === "option"
+    ) {
+      lines.push('#[serde(skip_serializing_if = "Option::is_none")]');
+    }
+
+    const rustFieldName = this.toSnakeCase(field.name);
+
+    if (rustFieldName !== field.name) {
+      lines.push(`#[serde(rename = "${field.name}")]`);
+    }
+
+    const rustType = this.resolvedTypeToRust(field.type);
+    // Note: No 'pub' keyword for enum variant fields
+    lines.push(`${rustFieldName}: ${rustType},`);
+
+    return lines;
   }
 
   private resolvedTypeToRust(type: ResolvedType): string {

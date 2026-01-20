@@ -27,6 +27,7 @@ import type {
   UnionType,
   UnionVariant,
   ConversionOptions,
+  TypeAliasType,
 } from "./types";
 import { TypeConversionError } from "./types";
 
@@ -266,6 +267,27 @@ export class TypeResolver {
     const name = declaration.getName();
     const type = declaration.getType();
     const typeNode = declaration.getTypeNode();
+
+    // Check for tuple types first (before object check, since tuples are objects)
+    if (type.isTuple()) {
+      const tupleTypes = type.getTupleElements();
+      const aliasType: TypeAliasType = {
+        kind: "type_alias",
+        name,
+        aliasedType: {
+          kind: "tuple",
+          elements: tupleTypes.map((t) => this.resolveType(t, declaration.getSourceFile())),
+        },
+        documentation: this.getDocumentation(declaration),
+      };
+      
+      this.collectedTypes.set(name, {
+        name,
+        type: aliasType,
+        sourceFile: declaration.getSourceFile().getFilePath(),
+      });
+      return;
+    }
 
     // Check if it's an object type that should become a struct
     if (type.isObject() && !type.isArray() && !this.isBuiltInType(type)) {
@@ -905,7 +927,8 @@ export class TypeResolver {
         const propType = prop.getTypeAtLocation(sourceFile);
         if (
           !propType.isStringLiteral() &&
-          !propType.isNumberLiteral()
+          !propType.isNumberLiteral() &&
+          !propType.isBooleanLiteral()
         ) {
           isDiscriminant = false;
           break;
@@ -952,7 +975,7 @@ export class TypeResolver {
         }
 
         const propType = prop.getTypeAtLocation(sourceFile);
-        if (!propType.isStringLiteral() && !propType.isNumberLiteral()) {
+        if (!propType.isStringLiteral() && !propType.isNumberLiteral() && !propType.isBooleanLiteral()) {
           isDiscriminant = false;
           break;
         }
@@ -978,8 +1001,12 @@ export class TypeResolver {
       // Create a struct for this variant
       const fields: StructField[] = [];
       for (const prop of t.getProperties()) {
-        // Skip the discriminant property
-        if (prop.getName() === discriminantProp) continue;
+        // Skip the discriminant property only if it's a string literal (will be handled by serde tagging)
+        const propName = prop.getName();
+        const propType = discriminantProp === propName ? t.getProperty(propName)?.getTypeAtLocation(sourceFile) : undefined;
+        const isStringDiscriminant = discriminantProp === propName && propType?.isStringLiteral();
+        
+        if (isStringDiscriminant) continue;
 
         const propDecl = prop.getDeclarations()[0];
         let isOptional = false;
@@ -997,7 +1024,7 @@ export class TypeResolver {
         }
 
         fields.push({
-          name: prop.getName(),
+          name: propName,
           type: resolvedType,
           optional: isOptional,
         });
@@ -1011,11 +1038,13 @@ export class TypeResolver {
             name: variantName,
             fields,
           },
+          discriminatorValue: discriminantValue ? String(discriminantValue) : undefined,
         });
       } else {
         variants.push({
           name: variantName,
           type: null,
+          discriminatorValue: discriminantValue ? String(discriminantValue) : undefined,
         });
       }
     }
@@ -1025,6 +1054,7 @@ export class TypeResolver {
       name,
       variants,
       documentation: this.getDocumentation(declaration),
+      discriminator: discriminantProp,
     };
   }
 
