@@ -79,9 +79,3 @@ fn test_0015() {
 fn test_0016() {
     run("0016");
 }
-
-// Test 0017 disabled - demonstrates cross-package imports work but interface extends needs more work
-// #[test]
-// fn test_0017() {
-//     run("0017");
-// }

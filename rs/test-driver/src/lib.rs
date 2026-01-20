@@ -174,7 +174,6 @@ fn values_equal(a: &serde_json::Value, b: &serde_json::Value) -> bool {
 
 
 fn create_main(type_name: &str, json_data: &str) {
-    // Generate a main.rs that deserializes the JSON, then serializes it back
     let main_content = format!(
         "mod generated;\n\
 \n\
