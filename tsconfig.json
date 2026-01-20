@@ -4,12 +4,18 @@
   ],
   "include": [
     "js/*/build.ts",
-    "js/scripts/**/*",
+    "js/scripts/**/*"
   ],
-  "references": [ // Tells the ide/compiler the relation between projects (Each sub project tsconfig.json also needs the correct relations).
+  "references": [
+    {
+      "path": "./js/test-package1"
+    },
     {
       "path": "./js/ts-rs"
     },
+    {
+      "path": "./js/test-package2"
+    }
   ],
   "compilerOptions": {
     "noEmit": true, // Asserts that this is just the root config and this "tsconfig" should not generate anything itself
@@ -42,6 +48,6 @@
     "noUnusedLocals": false, // Error if a variable is defined but not used
     "noUnusedParameters": false, // Error if a function parameter is defined but not used
     "noFallthroughCasesInSwitch": true, // Prevents accidental bugs in switch statements
-    "noPropertyAccessFromIndexSignature": true, // Enforces stricter access to properties defined in index signatures
-  },
+    "noPropertyAccessFromIndexSignature": true // Enforces stricter access to properties defined in index signatures
+  }
 }

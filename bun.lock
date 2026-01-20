@@ -16,6 +16,23 @@
         "typescript": "catalog:",
       },
     },
+    "js/test-package1": {
+      "name": "test-package1",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@types/bun": "catalog:",
+      },
+    },
+    "js/test-package2": {
+      "name": "test-package2",
+      "version": "0.0.1",
+      "dependencies": {
+        "test-package1": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "catalog:",
+      },
+    },
     "js/ts-rs": {
       "name": "ts-to-rs",
       "version": "0.0.1",
@@ -366,6 +383,10 @@
     "tapable": ["tapable@2.3.0", "", {}, "sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg=="],
 
     "terser": ["terser@5.46.0", "", { "dependencies": { "@jridgewell/source-map": "^0.3.3", "acorn": "^8.15.0", "commander": "^2.20.0", "source-map-support": "~0.5.20" }, "bin": { "terser": "bin/terser" } }, "sha512-jTwoImyr/QbOWFFso3YoU3ik0jBBDJ6JTOQiy/J2YxVJdZCc+5u7skhNwiOR3FQIygFqVUPHl7qbbxtjW2K3Qg=="],
+
+    "test-package1": ["test-package1@workspace:js/test-package1"],
+
+    "test-package2": ["test-package2@workspace:js/test-package2"],
 
     "tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 

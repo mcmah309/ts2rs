@@ -9,21 +9,18 @@ use std::collections::{HashMap};
 const OUTPUT_DIR: &str = "/tmp/ts-rs-test-output";
 
 pub fn run(test_name: &str) {
-    // Clean up previous runs
     let _ = fs::remove_file("../test-crate/src/main.rs");
     let _ = fs::remove_file("../test-crate/src/generated.rs");
     let _ = fs::remove_dir_all(OUTPUT_DIR);
     fs::create_dir_all(OUTPUT_DIR).unwrap();
 
-    // Find all JSON test files and extract type names
     let test_dir = format!("./tests/resources/{}", test_name);
     let test_path = Path::new(&test_dir);
     
     if !test_path.exists() {
         panic!("Test directory {} does not exist", test_dir);
     }
-    
-    // Scan for JSON files and group by type name
+
     let mut type_tests: HashMap<String, Vec<PathBuf>> = HashMap::new();
     
     for entry in fs::read_dir(test_path).expect("Failed to read test directory") {
@@ -51,8 +48,7 @@ pub fn run(test_name: &str) {
     if type_tests.is_empty() {
         panic!("No JSON test files found in {}", test_dir);
     }
-    
-    // For each type, run all its test cases
+
     for (type_name, json_files) in type_tests {
         for json_path in json_files {
             run_single_test(test_name, &type_name, &json_path);
@@ -63,8 +59,7 @@ pub fn run(test_name: &str) {
 fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
     let json_file_name = json_path.file_name().unwrap().to_str().unwrap();
     println!("Testing: {} with {}", type_name, json_file_name);
-    
-    // Step 1: Generate Rust code using ts-rs CLI
+
     let types_ts_path = format!("./tests/resources/{}/types.ts", test_name);
     let generated_rs_path = "../test-crate/src/generated.rs";
     
@@ -90,14 +85,11 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
         );
     }
 
-    // Step 2: Read the JSON test data
     let json_data = fs::read_to_string(json_path)
         .unwrap_or_else(|_| panic!("Failed to read JSON file: {:?}", json_path));
 
-    // Step 3: Generate main.rs
     create_main(type_name, &json_data);
 
-    // Step 4: Compile and run the test crate
     let compile_output = Command::new("cargo")
         .args(["build", "--manifest-path", "../test-crate/Cargo.toml"])
         .output()
@@ -124,7 +116,6 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
         );
     }
 
-    // Step 5: Compare the round-trip JSON
     let output_json_path = format!("{}/output.json", OUTPUT_DIR);
     let output_json = fs::read_to_string(&output_json_path)
         .unwrap_or_else(|_| panic!("Failed to read output JSON: {}", output_json_path));
@@ -152,7 +143,6 @@ fn values_equal(a: &serde_json::Value, b: &serde_json::Value) -> bool {
     
     match (a, b) {
         (Value::Number(n1), Value::Number(n2)) => {
-            // Compare numbers by their float representation
             n1.as_f64() == n2.as_f64()
         },
         (Value::String(s1), Value::String(s2)) => s1 == s2,
