@@ -60,7 +60,6 @@ export class TypeResolver {
   }
 
   private findTsConfig(entryFile: string): string | undefined {
-    // Try to find tsconfig.json in parent directories
     const configPath = ts.findConfigFile(
       entryFile,
       ts.sys.fileExists,
@@ -76,12 +75,10 @@ export class TypeResolver {
     const sourceFile = this.project.getSourceFileOrThrow(this.options.entryFile);
 
     if (this.options.typeNames && this.options.typeNames.length > 0) {
-      // Resolve specific types
       for (const typeName of this.options.typeNames) {
         this.resolveTypeByName(sourceFile, typeName);
       }
     } else {
-      // Resolve all exported types
       this.resolveAllExportedTypes(sourceFile);
     }
 
@@ -89,7 +86,6 @@ export class TypeResolver {
   }
 
   private resolveAllExportedTypes(sourceFile: SourceFile): void {
-    // Get all exported declarations
     const exportedDeclarations = sourceFile.getExportedDeclarations();
 
     for (const [name, declarations] of exportedDeclarations) {
@@ -189,19 +185,16 @@ export class TypeResolver {
     const fields: StructField[] = [];
     const typeParams = declaration.getTypeParameters().map((p) => p.getName());
 
-    // Track type parameters for this scope
     const previousTypeParams = new Set(this.typeParameters);
     typeParams.forEach((tp) => this.typeParameters.add(tp));
 
     try {
-      // Handle extended interfaces
       for (const extendedType of declaration.getExtends()) {
         const baseType = extendedType.getType();
         const baseFields = this.extractFieldsFromType(baseType, declaration.getSourceFile());
         fields.push(...baseFields);
       }
 
-      // Get own properties
       for (const prop of declaration.getProperties()) {
         fields.push(this.resolveProperty(prop));
       }
@@ -220,7 +213,6 @@ export class TypeResolver {
         sourceFile: declaration.getSourceFile().getFilePath(),
       });
     } finally {
-      // Restore previous type parameters
       this.typeParameters = previousTypeParams;
     }
   }
@@ -247,7 +239,6 @@ export class TypeResolver {
 
     let resolvedType = this.resolveType(type, prop.getSourceFile());
 
-    // Wrap in Option if optional and not already an Option
     if (isOptional && resolvedType.kind !== "option") {
       resolvedType = {
         kind: "option",
@@ -347,11 +338,9 @@ export class TypeResolver {
       }
     }
 
-    // Check if it's a union type
     if (type.isUnion()) {
       const unionTypes = type.getUnionTypes();
       
-      // Check for discriminated union or tagged union
       if (this.isDiscriminatedUnion(unionTypes, declaration.getSourceFile())) {
         const unionType = this.resolveDiscriminatedUnion(name, unionTypes, declaration);
         this.collectedTypes.set(name, {
@@ -362,7 +351,6 @@ export class TypeResolver {
         return;
       }
 
-      // Check for simple literal union (string literals, number literals)
       if (this.isLiteralUnion(unionTypes)) {
         const enumType = this.resolveLiteralUnionAsEnum(name, unionTypes, declaration);
         this.collectedTypes.set(name, {
@@ -373,7 +361,6 @@ export class TypeResolver {
         return;
       }
 
-      // For other union types, try to create a Rust enum
       const unionType = this.resolveUnionType(name, unionTypes, declaration);
       this.collectedTypes.set(name, {
         name,
@@ -383,8 +370,6 @@ export class TypeResolver {
       return;
     }
 
-    // If it's just a type alias to another named type, we might skip it or create an alias
-    // For simplicity, we'll resolve the underlying type
     const resolvedType = this.resolveType(type, declaration.getSourceFile());
     
     // If the resolved type is a struct/enum with a different name, create a type alias struct
@@ -459,7 +444,6 @@ export class TypeResolver {
             const typeRef = nonNullNode.asKind(SyntaxKind.TypeReference);
             if (typeRef) {
               const typeName = typeRef.getTypeName().getText();
-              // Try to resolve this type by name
               const declaration = this.findTypeDeclaration(sourceFile, typeName);
               if (declaration) {
                 this.resolveTypeByName(sourceFile, typeName);
@@ -514,13 +498,11 @@ export class TypeResolver {
    * Resolve a type from a type node directly
    */
   private resolveTypeFromNode(typeNode: Node, sourceFile: SourceFile): ResolvedType {
-    // Handle type references
     if (typeNode.getKind() === SyntaxKind.TypeReference) {
       const typeRef = typeNode.asKind(SyntaxKind.TypeReference);
       if (typeRef) {
         const typeName = typeRef.getTypeName().getText();
         
-        // Check for built-in types
         if (typeName === "Array") {
           const typeArgs = typeRef.getTypeArguments();
           if (typeArgs.length > 0) {
@@ -538,7 +520,6 @@ export class TypeResolver {
           return { kind: "struct", name: typeName, fields: [] };
         }
         
-        // Try to resolve the type from imports
         return this.resolveImportedType(typeName, sourceFile);
       }
     }
@@ -565,10 +546,8 @@ export class TypeResolver {
         if (namedImport.getName() === typeName) {
           const moduleSourceFile = importDecl.getModuleSpecifierSourceFile();
           if (moduleSourceFile) {
-            // Add the file to the project if not already there
             this.project.addSourceFileAtPath(moduleSourceFile.getFilePath());
-            
-            // Try to find the type in the imported file
+
             const declaration = this.findTypeDeclaration(moduleSourceFile, typeName);
             if (declaration) {
               this.resolveTypeByName(moduleSourceFile, typeName);
@@ -584,7 +563,6 @@ export class TypeResolver {
   }
 
   private resolveType(type: Type, sourceFile: SourceFile): ResolvedType {
-    // Handle null and undefined
     if (type.isNull()) {
       return { kind: "primitive", type: "null" };
     }
@@ -593,7 +571,6 @@ export class TypeResolver {
       return { kind: "primitive", type: "undefined" };
     }
 
-    // Handle type parameters (generics like T, U, etc.)
     if (type.isTypeParameter()) {
       const typeParamName = type.getSymbol()?.getName();
       if (typeParamName && this.typeParameters.has(typeParamName)) {
@@ -602,7 +579,6 @@ export class TypeResolver {
       }
     }
 
-    // Handle primitive types
     if (type.isString() || type.isStringLiteral()) {
       return { kind: "primitive", type: "string" };
     }
@@ -615,12 +591,10 @@ export class TypeResolver {
       return { kind: "primitive", type: "boolean" };
     }
 
-    // Handle any and unknown
     if (type.isAny() || type.isUnknown()) {
       return { kind: "json_value" };
     }
 
-    // Handle literal types
     if (type.isStringLiteral()) {
       return { kind: "literal", value: type.getLiteralValue() as string };
     }
@@ -634,7 +608,6 @@ export class TypeResolver {
       return { kind: "literal", value: text === "true" };
     }
 
-    // Handle arrays
     if (type.isArray()) {
       const elementType = type.getArrayElementType();
       if (elementType) {
@@ -645,7 +618,6 @@ export class TypeResolver {
       }
     }
 
-    // Handle tuples
     if (type.isTuple()) {
       const tupleTypes = type.getTupleElements();
       return {
@@ -654,7 +626,6 @@ export class TypeResolver {
       };
     }
 
-    // Handle union types (including T | null, T | undefined)
     if (type.isUnion()) {
       return this.resolveInlineUnionType(type, sourceFile);
     }
@@ -684,7 +655,6 @@ export class TypeResolver {
     if (symbol) {
       const symbolName = symbol.getName();
 
-      // Handle built-in types
       if (symbolName === "Array" || symbolName === "ReadonlyArray") {
         const typeArgs = type.getTypeArguments();
         if (typeArgs.length > 0 && typeArgs[0]) {
@@ -744,13 +714,11 @@ export class TypeResolver {
         return { kind: "json_value" };
       }
 
-      // Handle custom types - resolve them
+      // Handle custom types by resolving
       if (!this.isBuiltInType(type)) {
-        // Try to resolve and collect this type
         const decl = symbol.getDeclarations()?.[0];
         if (decl) {
           const declSourceFile = decl.getSourceFile();
-          // Only resolve types from user files, not node_modules
           if (!declSourceFile.getFilePath().includes("node_modules")) {
             this.project.addSourceFileAtPath(declSourceFile.getFilePath());
             this.resolveTypeByName(declSourceFile, symbolName);
@@ -760,7 +728,6 @@ export class TypeResolver {
           }
         }
 
-        // Return a reference to the struct
         return {
           kind: "struct",
           name: symbolName,
@@ -853,7 +820,6 @@ export class TypeResolver {
   }
 
   private isBuiltInType(type: Type): boolean {
-    // Check alias symbol first (for type aliases)
     const aliasSymbol = type.getAliasSymbol();
     if (aliasSymbol) {
       // If there's an alias symbol, this is a named type alias, not a built-in
@@ -901,7 +867,6 @@ export class TypeResolver {
     // Check if all types in the union have a common discriminant property
     if (types.length < 2) return false;
 
-    // Filter out null/undefined
     const objectTypes = types.filter(
       (t) => t.isObject() && !t.isNull() && !t.isUndefined(),
     );
@@ -910,7 +875,6 @@ export class TypeResolver {
     const firstObjectType = objectTypes[0];
     if (!firstObjectType) return false;
 
-    // Find common property names
     const firstProps = firstObjectType.getProperties().map((p) => p.getName());
 
     for (const propName of firstProps) {
@@ -998,7 +962,6 @@ export class TypeResolver {
         ? this.toVariantName(String(discriminantValue))
         : `Variant${variants.length}`;
 
-      // Create a struct for this variant
       const fields: StructField[] = [];
       for (const prop of t.getProperties()) {
         // Skip the discriminant property only if it's a string literal (will be handled by serde tagging)
@@ -1124,8 +1087,10 @@ export class TypeResolver {
     };
   }
 
+  /**
+   * Convert a string literal to a valid Rust enum variant name
+   */
   private toVariantName(value: string): string {
-    // Convert a string literal to a valid Rust enum variant name
     return value
       .split(/[-_\s]+/)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())

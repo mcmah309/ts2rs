@@ -35,12 +35,10 @@ program
         ? path.resolve(process.cwd(), options.output)
         : undefined;
 
-      // Parse type names
       const typeNames = options.types
         ? options.types.split(",").map((t: string) => t.trim())
         : undefined;
 
-      // Parse custom mappings
       let customTypeMappings: Record<string, string> | undefined;
       if (options.mapping) {
         customTypeMappings = {};
@@ -60,7 +58,6 @@ program
         customTypeMappings,
       });
 
-      // Print warnings if any
       if (result.warnings.length > 0) {
         console.error("Warnings:");
         for (const warning of result.warnings) {
@@ -69,7 +66,6 @@ program
         console.error("");
       }
 
-      // Print to stdout if no output file specified
       if (!outputPath) {
         console.log(result.rustCode);
       } else {

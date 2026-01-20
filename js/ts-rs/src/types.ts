@@ -1,6 +1,3 @@
-/**
- * Type definitions for TypeScript to Rust type conversion
- */
 
 /**
  * Represents a resolved TypeScript type that can be converted to Rust

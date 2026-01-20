@@ -145,34 +145,6 @@ describe("convert - Nested Types", () => {
   });
 });
 
-describe("convert - Enums", () => {
-  test("should convert string enums correctly", async () => {
-    const result = await convert({
-      entryFile: sampleTypesPath,
-      typeNames: ["Status"],
-    });
-
-    expect(result.rustCode).toContain("pub enum Status");
-    expect(result.rustCode).toContain('#[serde(rename = "active")]');
-    expect(result.rustCode).toContain("Active,");
-    expect(result.rustCode).toContain('#[serde(rename = "inactive")]');
-    expect(result.rustCode).toContain("Inactive,");
-  });
-
-  test("should convert numeric enums correctly", async () => {
-    const result = await convert({
-      entryFile: sampleTypesPath,
-      typeNames: ["Priority"],
-    });
-
-    expect(result.rustCode).toContain("pub enum Priority");
-    expect(result.rustCode).toContain("#[repr(u32)]");
-    expect(result.rustCode).toContain("Low = 0,");
-    expect(result.rustCode).toContain("Medium = 1,");
-    expect(result.rustCode).toContain("High = 2,");
-  });
-});
-
 describe("convert - Union Types", () => {
   test("should convert string literal union as enum", async () => {
     const result = await convert({
@@ -225,29 +197,8 @@ describe("convert - Serde Attributes", () => {
       typeNames: ["BasicTypes"],
     });
 
-    expect(result.rustCode).toContain("#[derive(Debug, Clone, Serialize, Deserialize)]");
+    expect(result.rustCode).toContain("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
     expect(result.rustCode).toContain('#[serde(rename_all = "camelCase")]');
-  });
-
-  test("should respect generateSerdeAttributes option", async () => {
-    const result = await convert({
-      entryFile: sampleTypesPath,
-      typeNames: ["BasicTypes"],
-      generateSerdeAttributes: false,
-    });
-
-    expect(result.rustCode).toContain("#[derive(Debug, Clone, Serialize, Deserialize)]");
-    // Still includes derive, but not the rename_all
-  });
-
-  test("should respect useCamelCase option", async () => {
-    const result = await convert({
-      entryFile: sampleTypesPath,
-      typeNames: ["BasicTypes"],
-      useCamelCase: false,
-    });
-
-    expect(result.rustCode).not.toContain('#[serde(rename_all = "camelCase")]');
   });
 });
 

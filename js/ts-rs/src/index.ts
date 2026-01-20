@@ -45,7 +45,6 @@ export type {
  * ```
  */
 export async function convert(options: ConversionOptions): Promise<ConversionResult> {
-  // Resolve the entry file path
   const entryFile = path.resolve(options.entryFile);
 
   if (!fs.existsSync(entryFile)) {
@@ -57,7 +56,6 @@ export async function convert(options: ConversionOptions): Promise<ConversionRes
     entryFile,
   };
 
-  // Resolve TypeScript types
   const resolver = new TypeResolver(resolverOptions);
   const collectedTypes = resolver.resolve();
 
@@ -69,11 +67,9 @@ export async function convert(options: ConversionOptions): Promise<ConversionRes
     };
   }
 
-  // Generate Rust code
   const generator = new RustGenerator(resolverOptions);
   const result = generator.generate(collectedTypes);
 
-  // Write to file if outputPath is specified
   if (options.outputPath) {
     const outputPath = path.resolve(options.outputPath);
     const outputDir = path.dirname(outputPath);
