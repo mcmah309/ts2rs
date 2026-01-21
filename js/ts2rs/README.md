@@ -48,11 +48,15 @@ import { convert } from 'ts2rs';
 
 const result = await convert({
   entryFile: './src/types.ts',
-  typeNames: ['User', 'Post'],
-  outputPath: './generated/types.rs',
-  strict: false,
-  customTypeMappings: {
+  typeNames: ['User', 'Post'], // optional
+  outputPath: './generated/types.rs', // optional
+  strict: false, // optional
+  customTypeMappings: { // optional
     Date: 'chrono::DateTime<Utc>',
+    MyTypeTs: {
+      rustType: "my_crate::MyTypeRs",
+      fieldAnnotations: ['#[serde(with = "my_type_serde")]'],
+    },
   },
 });
 
