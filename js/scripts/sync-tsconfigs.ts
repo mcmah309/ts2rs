@@ -8,18 +8,23 @@ import { dirname, relative, join } from "node:path";
  * 
  * The ts server will not automatically know about file changes between packages
  * unless there is an explicit "references" in `tsconfig.json` between projects.
+ * (Even this may not be enough sometimes since it is wonky and you may need to rebuild those references
+ * if it is looking at the `.d.ts` files rather than the source files themselves and/or restart the server)
  * 
  * Additionally, everything may compile, but the ts server will not resolve type defintions of "go to"
- * in the ide unless `compilerOptions.paths` is set.
+ * in the ide unless `compilerOptions.paths` is set. But setting this leads to issues with `tsc` complaining
+ * about files not being under "include" or "files", so we don't set this.
+ * 
+ * **Truly the worst multi-project repo experience :)**
  *
  * Implementation:
  * 
  * Treat `package.json` as the single source of truth.
  *
- * Any workspace dependency declared in `package.json` will be dded to
- * TypeScript tsconfig.json "references" and "compilerOptions.paths".
+ * Any workspace dependency declared in `package.json` will be added to the
+ * TypeScript tsconfig.json "references".
  * 
- * If an output path argument is provided, the graph will be dumped to that loaction
+ * If an output path argument is provided, the graph will be dumped to that loaction as well.
  */
 
 type PackageInfo = {
@@ -89,27 +94,6 @@ async function syncConfigs() {
     json.references = deps.map(dep => ({
       path: relative(dirname(pkg.tsconfigPath), dirname(dep.tsconfigPath)),
     }));
-
-    json.compilerOptions = json.compilerOptions || {};
-    const paths: Record<string, string[]> = {};
-
-    for (const dep of deps) {
-      const relPathToDepSrc = join(
-        relative(dirname(pkg.tsconfigPath), dirname(dep.tsconfigPath)),
-        "src" 
-      );
-      
-      // Map 'package-name' to ['../other-package/src']
-      // and 'package-name/*' to ['../other-package/src/*']
-      // paths[dep.name] = [relPathToDepSrc];
-      // paths[`${dep.name}/*`] = [`${relPathToDepSrc}/*`];
-    }
-
-    if (Object.keys(paths).length > 0) {
-      json.compilerOptions.paths = paths;
-    } else {
-      delete json.compilerOptions.paths;
-    }
 
     writeFileSync(pkg.tsconfigPath, stringify(json, null, 2));
     console.log(`✅ ${pkg.name}: linked references and paths for [${deps.map(d => d.name).join(", ")}]`);

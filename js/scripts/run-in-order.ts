@@ -28,7 +28,6 @@ async function runGraph() {
   const running = new Set<string>();
   const completed = new Set<string>();
 
-  // Convert input arrays to Sets
   for (const [pkg, deps] of Object.entries(rawGraph)) {
     dependencies.set(pkg, new Set(deps));
   }
@@ -45,17 +44,14 @@ async function runGraph() {
         dependencies.get(pkg)?.size === 0
       );
 
-      // Cycle detection: If nothing is running but we aren't done, and no one is ready...
       if (readyToRun.length === 0 && running.size === 0 && completed.size < allDependencies.length) {
         return reject(new Error("Dependency Cycle Detected: No further packages can start."));
       }
 
-      // Success check
       if (completed.size === allDependencies.length) {
         return resolvePromise();
       }
 
-      // Execute all ready tasks in parallel
       for (const pkg of readyToRun) {
         executeTask(pkg);
       }
@@ -65,7 +61,6 @@ async function runGraph() {
       running.add(pkg);
       console.log(`▶ [START] ${pkg}`);
 
-      // Assuming package folder name matches package name inside 'js/'
       const pkgDir = resolve(process.cwd(), "js", pkg);
 
       const proc = spawn({
@@ -86,18 +81,15 @@ async function runGraph() {
         console.log(`✅ [DONE] ${pkg}`);
         completed.add(pkg);
 
-        // Remove this package from the dependency sets of all others
         // @ts-ignore
         for (const set of dependencies.values()) {
           set.delete(pkg);
         }
 
-        // Re-evaluate the graph
         checkAndRun();
       });
     }
 
-    // Start the engine
     checkAndRun();
   });
 }
