@@ -611,7 +611,6 @@ export class TypeResolver {
       }
     }
     
-    // Handle basic types
     const text = typeNode.getText();
     if (text === "string") return { kind: "primitive", type: "string" };
     if (text === "number") return { kind: "primitive", type: "number" };
