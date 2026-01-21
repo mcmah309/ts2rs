@@ -8,7 +8,9 @@
 
 import { Command } from "commander";
 import * as path from "node:path";
+import * as fs from "node:fs";
 import { convert } from "./index";
+import type { CustomTypeMappingValue } from "./types";
 
 const program = new Command();
 
@@ -26,7 +28,23 @@ program
   )
   .option(
     "-m, --mapping <mappings>",
-    "Custom type mappings in format TypeScriptName:RustName,... (comma-separated)",
+    "Custom type mappings in format TypeScriptName:RustName,... (comma-separated). Use TypeScriptName:RustName@annotation1@annotation2 for field annotations.",
+  )
+  .option(
+    "--custom-header <text>",
+    "Custom text to inject at the top of the generated file (after auto-generated comment)",
+  )
+  .option(
+    "--custom-header-file <path>",
+    "Path to a file containing custom header text",
+  )
+  .option(
+    "--custom-footer <text>",
+    "Custom text to inject at the bottom of the generated file",
+  )
+  .option(
+    "--custom-footer-file <path>",
+    "Path to a file containing custom footer text",
   )
   .option(
     "-s, --strict",
@@ -43,16 +61,48 @@ program
         ? options.types.split(",").map((t: string) => t.trim())
         : undefined;
 
-      let customTypeMappings: Record<string, string> | undefined;
+      let customTypeMappings: Record<string, CustomTypeMappingValue> | undefined;
       if (options.mapping) {
         customTypeMappings = {};
         const mappings = options.mapping.split(",");
         for (const mapping of mappings) {
-          const [tsName, rsName] = mapping.split(":").map((s: string) => s.trim());
+          // Format: TypeScriptName:RustName or TypeScriptName:RustName@annotation1@annotation2
+          const colonIndex = mapping.indexOf(":");
+          if (colonIndex === -1) continue;
+          
+          const tsName = mapping.slice(0, colonIndex).trim();
+          const restPart = mapping.slice(colonIndex + 1);
+          
+          const parts = restPart.split("@").map((s: string) => s.trim());
+          const rsName = parts[0];
+          
           if (tsName && rsName) {
-            customTypeMappings[tsName] = rsName;
+            if (parts.length > 1) {
+              // Has field annotations
+              customTypeMappings[tsName] = {
+                rustType: rsName,
+                fieldAnnotations: parts.slice(1),
+              };
+            } else {
+              // Simple string mapping
+              customTypeMappings[tsName] = rsName;
+            }
           }
         }
+      }
+
+      // Handle custom header
+      let customHeader = options.customHeader;
+      if (options.customHeaderFile) {
+        const headerPath = path.resolve(process.cwd(), options.customHeaderFile);
+        customHeader = fs.readFileSync(headerPath, "utf-8").trim();
+      }
+
+      // Handle custom footer
+      let customFooter = options.customFooter;
+      if (options.customFooterFile) {
+        const footerPath = path.resolve(process.cwd(), options.customFooterFile);
+        customFooter = fs.readFileSync(footerPath, "utf-8").trim();
       }
 
       const result = await convert({
@@ -60,6 +110,8 @@ program
         outputPath,
         typeNames,
         customTypeMappings,
+        customHeader,
+        customFooter,
         strict: options.strict,
       });
 

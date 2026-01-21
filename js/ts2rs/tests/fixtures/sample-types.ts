@@ -132,3 +132,15 @@ export interface Book {
   /** Optional description */
   description?: string;
 }
+
+// External type that should be mapped to a custom Rust type
+export interface CustomExternalType {
+  value: string;
+}
+
+// Type that uses the external type - for testing custom mappings
+export interface CustomMappingTest {
+  name: string;
+  externalData: CustomExternalType;
+  optionalExternal?: CustomExternalType;
+}

@@ -202,6 +202,107 @@ describe("convert - Serde Attributes", () => {
   });
 });
 
+describe("convert - Custom Type Mappings", () => {
+  test("should apply simple custom type mapping", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["CustomMappingTest"],
+      customTypeMappings: {
+        "CustomExternalType": "my_crate::MyExternalType",
+      },
+    });
+
+    expect(result.rustCode).toContain("pub struct CustomMappingTest");
+    expect(result.rustCode).toContain("pub external_data: my_crate::MyExternalType");
+  });
+
+  test("should apply custom type mapping with field annotations", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["CustomMappingTest"],
+      customTypeMappings: {
+        "CustomExternalType": {
+          rustType: "DateTime<Utc>",
+          fieldAnnotations: ['#[serde(with = "chrono_serde")]'],
+        },
+      },
+    });
+
+    expect(result.rustCode).toContain("pub struct CustomMappingTest");
+    expect(result.rustCode).toContain('#[serde(with = "chrono_serde")]');
+    expect(result.rustCode).toContain("pub external_data: DateTime<Utc>");
+  });
+
+  test("should apply multiple field annotations", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["CustomMappingTest"],
+      customTypeMappings: {
+        "CustomExternalType": {
+          rustType: "CustomType",
+          fieldAnnotations: [
+            '#[serde(serialize_with = "custom_serialize")]',
+            '#[serde(deserialize_with = "custom_deserialize")]',
+          ],
+        },
+      },
+    });
+
+    expect(result.rustCode).toContain('#[serde(serialize_with = "custom_serialize")]');
+    expect(result.rustCode).toContain('#[serde(deserialize_with = "custom_deserialize")]');
+    expect(result.rustCode).toContain("pub external_data: CustomType");
+  });
+});
+
+describe("convert - Custom Header and Footer", () => {
+  test("should inject custom header at top of file", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["BasicTypes"],
+      customHeader: "use chrono::{DateTime, Utc};\nuse my_crate::helpers;",
+    });
+
+    expect(result.rustCode).toContain("use chrono::{DateTime, Utc};");
+    expect(result.rustCode).toContain("use my_crate::helpers;");
+    // Header should be before the types
+    const headerIndex = result.rustCode.indexOf("use chrono::{DateTime, Utc};");
+    const structIndex = result.rustCode.indexOf("pub struct BasicTypes");
+    expect(headerIndex).toBeLessThan(structIndex);
+  });
+
+  test("should inject custom footer at bottom of file", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["BasicTypes"],
+      customFooter: "// Custom footer comment\nimpl BasicTypes {\n    pub fn new() -> Self { todo!() }\n}",
+    });
+
+    expect(result.rustCode).toContain("// Custom footer comment");
+    expect(result.rustCode).toContain("impl BasicTypes {");
+    // Footer should be after the struct
+    const structIndex = result.rustCode.indexOf("pub struct BasicTypes");
+    const footerIndex = result.rustCode.indexOf("// Custom footer comment");
+    expect(footerIndex).toBeGreaterThan(structIndex);
+  });
+
+  test("should inject both custom header and footer", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["BasicTypes"],
+      customHeader: "// CUSTOM HEADER",
+      customFooter: "// CUSTOM FOOTER",
+    });
+
+    expect(result.rustCode).toContain("// CUSTOM HEADER");
+    expect(result.rustCode).toContain("// CUSTOM FOOTER");
+    const headerIndex = result.rustCode.indexOf("// CUSTOM HEADER");
+    const footerIndex = result.rustCode.indexOf("// CUSTOM FOOTER");
+    const structIndex = result.rustCode.indexOf("pub struct BasicTypes");
+    expect(headerIndex).toBeLessThan(structIndex);
+    expect(footerIndex).toBeGreaterThan(structIndex);
+  });
+});
+
 describe("convert - Documentation", () => {
   test("should include documentation comments", async () => {
     const result = await convert({
@@ -220,15 +321,24 @@ describe("convert - Output File", () => {
     const outputPath = path.join(fixturesDir, "output.rs");
     const fs = await import("fs");
 
+    // Clean up any existing file
     if (fs.existsSync(outputPath)) {
       fs.unlinkSync(outputPath);
     }
+
+    // Convert and write to file
+    await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["BasicTypes"],
+      outputPath,
+    });
 
     expect(fs.existsSync(outputPath)).toBe(true);
 
     const content = fs.readFileSync(outputPath, "utf-8");
     expect(content).toContain("pub struct BasicTypes");
 
+    // Clean up
     fs.unlinkSync(outputPath);
   });
 });

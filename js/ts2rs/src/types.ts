@@ -135,6 +135,28 @@ export interface CollectedType {
 }
 
 /**
+ * Custom type mapping configuration with optional field annotations
+ */
+export interface CustomTypeMapping {
+  /**
+   * The Rust type name to use
+   */
+  rustType: string;
+
+  /**
+   * Optional field annotations to add when this type is used as a field
+   * e.g., ['#[serde(with = "my_module")]', '#[serde(default)]']
+   */
+  fieldAnnotations?: string[];
+}
+
+/**
+ * Custom type mappings can be either a simple string (Rust type name)
+ * or a full CustomTypeMapping object with field annotations
+ */
+export type CustomTypeMappingValue = string | CustomTypeMapping;
+
+/**
  * Options for the TypeScript to Rust converter
  */
 export interface ConversionOptions {
@@ -154,9 +176,19 @@ export interface ConversionOptions {
   outputPath?: string;
 
   /**
-   * Custom type mappings from TypeScript type names to Rust type names
+   * Custom type mappings from TypeScript type names to Rust type names or full mapping config
    */
-  customTypeMappings?: Record<string, string>;
+  customTypeMappings?: Record<string, CustomTypeMappingValue>;
+
+  /**
+   * Custom header to inject at the top of the generated file (after auto-generated comment)
+   */
+  customHeader?: string;
+
+  /**
+   * Custom footer to inject at the bottom of the generated file
+   */
+  customFooter?: string;
 
   /**
    * Strict mode: fail on unresolvable types instead of falling back to serde_json::Value
