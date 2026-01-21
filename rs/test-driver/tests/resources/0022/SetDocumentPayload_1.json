@@ -1,0 +1,47 @@
+{
+  "headHtml": "<title>Bilingual Education - Chapter 1</title><meta name='author' content='Jane Doe'>",
+  "primaryHtml": "<div id='p1'><h1>Hello World</h1><p>This is the first paragraph of our document.</p></div>",
+  "secondaryHtml": "<div id='s1'><h1>Bonjour le Monde</h1><p>Ceci est le premier paragraphe de notre document.</p></div>",
+  "primaryLangId": "en",
+  "secondaryLangId": "fr",
+  "primaryAnnotations": [
+    {
+      "id": "annot-001",
+      "ranges": [
+        {
+          "start": {
+            "path": [
+              { "index": 0, "tagName": "div", "id": "p1" },
+              { "index": 1, "tagName": "p", "id": null }
+            ],
+            "offset": 0
+          },
+          "end": {
+            "path": [
+              { "index": 0, "tagName": "div", "id": "p1" },
+              { "index": 1, "tagName": "p", "id": null }
+            ],
+            "offset": 4
+          },
+          "text": "This"
+        }
+      ],
+      "color": "ffeb3b",
+      "createdAt": 1705852213000,
+      "updatedAt": 1705852213000,
+      "extra": {
+        "comment": "Check translation accuracy",
+        "author": "editor-01",
+        "priority": "high"
+      }
+    }
+  ],
+  "secondaryAnnotations": [],
+  "syncEntries": [
+    {
+      "dataId": "sync-h1",
+      "primary": [4, 15],
+      "secondary": [8, 24]
+    }
+  ]
+}
