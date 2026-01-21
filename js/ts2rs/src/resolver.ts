@@ -818,16 +818,12 @@ export class TypeResolver {
           // For types from node_modules, we need to check if this is a top-level
           // type declaration or a nested type (like PackageJson.WorkspaceConfig)
           if (this.isFromNodeModules(filePath)) {
-            // Add the source file if not already added
             if (!this.project.getSourceFile(filePath)) {
               this.project.addSourceFileAtPath(filePath);
             }
-            
-            // Try to find if this is a top-level type
             const typeDecl = this.findTypeDeclaration(declSourceFile, aliasName);
             
             if (typeDecl) {
-              // It's a top-level type, resolve it by name
               this.resolveTypeByName(declSourceFile, aliasName);
               
               return {
@@ -1032,7 +1028,7 @@ export class TypeResolver {
           });
         }
 
-        // Anonymous struct - will need to be handled specially in code generation
+        // Anonymous struct - will be handled specially in code generation
         return {
           kind: "struct",
           name: "",

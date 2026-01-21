@@ -430,7 +430,6 @@ export class RustGenerator {
         lines.push("    " + this.formatDocComment(variant.documentation));
       }
 
-      // Add rename attribute for discriminated unions
       if (type.discriminator && variant.discriminatorValue) {
         lines.push(`    #[serde(rename = "${variant.discriminatorValue}")]`);
       }
@@ -497,7 +496,6 @@ export class RustGenerator {
   }
 
   private resolvedTypeToRust(type: ResolvedType): string {
-    // Check custom type mappings first
     if (type.kind === "struct" && type.name) {
       const customMapping = this.getCustomMapping(type.name);
       if (customMapping) {
@@ -546,7 +544,6 @@ export class RustGenerator {
         return type.name;
 
       case "literal":
-        // Literals in field positions should use their base type
         if (typeof type.value === "string") return "String";
         if (typeof type.value === "number") return "f64";
         if (typeof type.value === "boolean") return "bool";
