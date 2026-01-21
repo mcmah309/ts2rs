@@ -87,8 +87,8 @@ rm("./dist", { recursive: true, force: true }, (err) => {
     }
 });
 
-const entryPointGlob = new Glob("**/{index.ts,*.index.ts}");
-const entrypoints = Array.from(entryPointGlob.scanSync("./src")).map(path => `./src/${path}`);
+const libEntryPointGlob = new Glob("**/{index.ts,*.index.ts}");
+const libEntrypoints = Array.from(libEntryPointGlob.scanSync("./src")).map(path => `./src/${path}`);
 
 const htmlGlob = new Glob("**/*.html");
 const htmlFiles = Array.from(htmlGlob.scanSync("./src")).map(path => `./src/${path}`);
@@ -98,7 +98,7 @@ const configs: ({ name: string } & BuildConfig)[] = [];
 const libraryBuild: ({ name: string } & BuildConfig) = {
     name: "Library (External)",
     root: "./src",
-    entrypoints: entrypoints,
+    entrypoints: libEntrypoints,
     naming: "[dir]/[name].[ext]",
     outdir: './dist/lib',
     format: 'esm',
@@ -112,9 +112,12 @@ const libraryBuild: ({ name: string } & BuildConfig) = {
     // ]
 };
 
+const bundleEntryPointGlob = new Glob("**/{bundle.ts,*.bundle.ts}");
+const bundleEntrypoints = Array.from(bundleEntryPointGlob.scanSync("./src")).map(path => `./src/${path}`);
+
 let debugBundleBuild: ({ name: string } & BuildConfig) = {
     ...libraryBuild,
-    entrypoints: [...libraryBuild.entrypoints, ...htmlFiles],
+    entrypoints: [...libraryBuild.entrypoints, ...htmlFiles, ...bundleEntrypoints],
     name: "Bundle (Debug)",
     outdir: './dist/bundle',
     packages: 'bundle',

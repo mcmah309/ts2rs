@@ -58,7 +58,7 @@ fn run_fails_strict_reverse_test(test_name: &str, expected_json_path: &Path) {
     let strict_output = Command::new("bun")
         .args([
             "run",
-            "../../js/ts2rs/src/cli.ts",
+            "../../js/ts2rs/src/cli.bundle.ts",
             "-i",
             types_ts_path.to_str().unwrap(),
             "-t",
@@ -83,7 +83,7 @@ fn run_fails_strict_reverse_test(test_name: &str, expected_json_path: &Path) {
     let output = Command::new("bun")
         .args([
             "run",
-            "../../js/ts2rs/src/cli.ts",
+            "../../js/ts2rs/src/cli.bundle.ts",
             "-i",
             types_ts_path.to_str().unwrap(),
             "-t",
@@ -120,7 +120,7 @@ fn run_normal_reverse_test(test_name: &str, expected_json_path: &Path) {
     let output = Command::new("bun")
         .args([
             "run",
-            "../../js/ts2rs/src/cli.ts",
+            "../../js/ts2rs/src/cli.bundle.ts",
             "-i",
             types_ts_path.to_str().unwrap(),
             "-t",

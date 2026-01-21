@@ -86,7 +86,7 @@ fn run_fails_strict_test(test_name: &str, type_name: &str, json_path: &Path) {
     let strict_output = Command::new("bun")
         .args([
             "run",
-            "../../js/ts2rs/src/cli.ts",
+            "../../js/ts2rs/src/cli.bundle.ts",
             "-i",
             &types_ts_path,
             "-t",
@@ -113,7 +113,7 @@ fn run_fails_strict_test(test_name: &str, type_name: &str, json_path: &Path) {
     let output = Command::new("bun")
         .args([
             "run",
-            "../../js/ts2rs/src/cli.ts",
+            "../../js/ts2rs/src/cli.bundle.ts",
             "-i",
             &types_ts_path,
             "-t",
@@ -199,7 +199,7 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
     let output = Command::new("bun")
         .args([
             "run",
-            "../../js/ts2rs/src/cli.ts",
+            "../../js/ts2rs/src/cli.bundle.ts",
             "-i",
             &types_ts_path,
             "-t",

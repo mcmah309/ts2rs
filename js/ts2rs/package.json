@@ -18,16 +18,16 @@
   "type": "module",
   "description": "Deeply inspects typescript types to convert to rust types for bidirectional JSON serialization",
   "bin": {
-    "ts2rs": "./src/cli.ts"
+    "ts2rs": "./dist/cli.bundle.js"
   },
   "exports": {
     ".": {
-      "bun": "./src/lib/index.ts",
+      "bun": "./src/index.ts",
       "types": "./dist/lib/index.d.ts",
       "import": "./dist/lib/index.js",
       "default": "./dist/lib/index.js"
     },
-    "./bundle": "./dist/bundle/index.js"
+    "./bundle/*": "./dist/bundle/*.js"
   },
   "files": [
     "dist",
@@ -40,7 +40,7 @@
     "build:release": "NODE_ENV=production bun run ../build.ts",
     "watch": "bun run ../build.ts --watch",
     "test": "bun test",
-    "generate": "bun run ./src/cli.ts",
+    "generate": "bun run ./src/cli.bundle.ts",
     "publish": "bun run build:release && bun publish"
   },
   "dependencies": {
