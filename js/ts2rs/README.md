@@ -253,5 +253,5 @@ cargo test --package reverse-test-driver -- --test-threads=1
 ## Limitations
 
 - Generic types are not supported on types not listed (will fall back to `serde_json::Value`)
-- Circular references may cause issues
+- Circular references may cause issues if the usage is not a heaped value (e.g. array or set) and not within the same type (otherwise we know to handle with boxing).
 - Some complex TypeScript utility types (e.g., `Pick`, `Omit`) are not supported
