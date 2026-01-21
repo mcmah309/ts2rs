@@ -232,23 +232,24 @@ cd rs
 cargo test --package reverse-test-driver -- --test-threads=1
 ```
 
-## Type Mapping
+## Built-in Type Mapping
 
 | TypeScript Type | Rust Type |
 |----------------|-----------|
 | `string` | `String` |
 | `number` | `f64` |
 | `boolean` | `bool` |
-| `null` | (skipped in unions) |
-| `undefined` | (skipped in unions) |
 | `T[]` | `Vec<T>` |
 | `[T, U]` | `(T, U)` |
 | `T \| null` | `Option<T>` |
 | `T \| undefined` | `Option<T>` |
 | `Record<string, T>` | `std::collections::HashMap<String, T>` |
+| `Map<T, TT>` | `std::collections::HashMap<T, TT>` |
+| `Set<T>` | `std::collections::HashSet<T>` |
 | `any` | `serde_json::Value` |
 | `unknown` | `serde_json::Value` |
 | `Date` | `String` (custom mapping recommended) |
+| `'A' \| 'B' \| 'C'` |  `enum { A, B, C }` |
 
 ## Limitations
 
