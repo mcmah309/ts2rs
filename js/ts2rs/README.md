@@ -62,7 +62,7 @@ const result = await convert({
       fieldAnnotations: ['#[serde(with = "my_type_serde")]'],
     },
   },
-  customTypeAnnotations: [ // optional - added before #[derive] on all types
+  customTypeAnnotations: [ // optional
     '#[my_macro]',
     '#[derive(MyTrait)]',
   ],
