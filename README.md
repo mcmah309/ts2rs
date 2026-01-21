@@ -191,6 +191,14 @@ In **strict mode** (`--strict`), these cases throw errors instead of warnings, e
 - Explicit `any` types (intentional fallback)
 - Explicit `unknown` types (intentional fallback)
 
+## Debugging
+
+Set `DEBUG=1` environment variable for stack traces in the cli:
+
+```bash
+DEBUG=1 bun js/ts2rs/src/cli.ts -i input.ts
+```
+
 ## Testing
 
 ### Forward Tests (TypeScript → Rust (Generated), Rust Validation With JSON Data)

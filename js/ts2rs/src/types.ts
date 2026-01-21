@@ -3,19 +3,19 @@
  * Represents a resolved TypeScript type that can be converted to Rust
  */
 export type ResolvedType =
-  | PrimitiveType
-  | ArrayType
-  | TupleType
-  | RecordType
-  | MapType
-  | SetType
-  | OptionType
-  | StructType
-  | EnumType
-  | UnionType
-  | LiteralType
-  | JsonValueType
-  | TypeAliasType;
+  | PrimitiveType       // string, number, boolean, null, undefined
+  | ArrayType           // T[]
+  | TupleType           // [T, U, ...]
+  | RecordType          // Record<string, T>
+  | MapType             // Map<K, V>
+  | SetType             // Set<T>
+  | OptionType          // T | null | undefined
+  | StructType          // interface { ... }
+  | EnumType            // enum { ... }
+  | UnionType           // type T = A | B | C
+  | LiteralType         // "literal" | 123 | true
+  | JsonValueType       // serde_json::Value (fallback)
+  | TypeAliasType;      // type T = ...
 
 export interface PrimitiveType {
   kind: "primitive";
