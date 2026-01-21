@@ -130,7 +130,7 @@ fn run_fails_strict_test(test_name: &str, type_name: &str, json_path: &Path) {
         );
     }
 
-    fs::copy(generated_rs_test_path, generated_rs_path)
+    fs::copy(&generated_rs_test_path, &generated_rs_path)
         .expect("Failed to copy generated.rs to test-crate");
 
     let json_data = fs::read_to_string(json_path)
@@ -182,6 +182,8 @@ fn run_fails_strict_test(test_name: &str, type_name: &str, json_path: &Path) {
             serde_json::to_string_pretty(&output).unwrap()
         );
     }
+
+    compare_files(&generated_rs_test_path, test_name, json_file_name);
 
     println!(
         "✓ {} with {} passed round-trip test (with Value fallback)",
@@ -220,7 +222,7 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
         );
     }
 
-    fs::copy(generated_rs_test_path, generated_rs_path)
+    fs::copy(&generated_rs_test_path, &generated_rs_path)
         .expect("Failed to copy generated.rs to test-crate");
 
     let json_data = fs::read_to_string(json_path)
@@ -272,6 +274,8 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
             serde_json::to_string_pretty(&output).unwrap()
         );
     }
+
+    compare_files(&generated_rs_test_path, test_name, json_file_name);
 
     println!(
         "✓ {} with {} passed round-trip test",
@@ -335,4 +339,42 @@ fn main() {{\n\
     );
 
     fs::write("../test-crate/src/main.rs", main_content).expect("Failed to write main.rs");
+}
+
+
+fn compare_files(generated_path: &str, test_name: &str, json_file_name: &str) {
+    let expected_path = format!("./tests/resources/{}/expected/{}.rs", test_name, json_file_name);
+    let expected_path = Path::new(&expected_path);
+
+    if !expected_path.exists() {
+        panic!(
+            "Expected file does not exist.\nPath: {:?}\nPlease manually verify the output in 'generated' and copy it to 'expected' if correct.",
+            expected_path
+        );
+    }
+
+    let generated_content = fs::read_to_string(generated_path).expect("Failed to read generated file");
+    let expected_content = fs::read_to_string(expected_path).expect("Failed to read expected file");
+
+    let clean_generated = sanitize_content(&generated_content);
+    let clean_expected = sanitize_content(&expected_content);
+
+    if clean_generated != clean_expected {
+        panic!(
+            "Content mismatch in {}.rs\nExpected (sanitized):\n{}\n\nActual (sanitized):\n{}\n",
+            json_file_name, clean_expected, clean_generated
+        );
+    }
+    
+    println!("✓ Generated code matches expected for {}", json_file_name);
+}
+
+/// Removes lines starting with // and collapses whitespace
+fn sanitize_content(content: &str) -> String {
+    content
+        .lines()
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty() && !line.starts_with("//"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
