@@ -1,4 +1,4 @@
-use generated::*;
+mod generated;
 
 fn main() {
 
