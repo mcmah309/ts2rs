@@ -13,7 +13,7 @@ import { convert } from "./index";
 const program = new Command();
 
 program
-  .name("ts-to-rs")
+  .name("ts2rs")
   .description(
     "Convert TypeScript types to Rust types for bidirectional JSON serialization",
   )

@@ -1,5 +1,5 @@
 /**
- * Test fixtures for ts-to-rs
+ * Test fixtures for ts2rs
  * These types exercise various TypeScript to Rust conversion scenarios
  */
 

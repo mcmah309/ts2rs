@@ -1,5 +1,5 @@
 /**
- * ts-to-rs - TypeScript to Rust type converter
+ * ts2rs - TypeScript to Rust type converter
  *
  * A programmatic API and CLI tool for converting TypeScript types to Rust types
  * for bidirectional JSON serialization.
@@ -32,7 +32,7 @@ export type {
  *
  * @example
  * ```typescript
- * import { convert } from 'ts-to-rs';
+ * import { convert } from 'ts2rs';
  *
  * const result = await convert({
  *   entryFile: './src/types.ts',

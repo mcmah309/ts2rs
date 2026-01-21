@@ -1,10 +1,10 @@
 {
-  "name": "ts-to-rs",
+  "name": "ts2rs",
   "version": "0.0.1",
   "type": "module",
   "description": "Deeply inspects typescript types to convert to rust types for bidirectional JSON serialization",
   "bin": {
-    "ts-to-rs": "./src/cli.ts"
+    "ts2rs": "./src/cli.ts"
   },
   "exports": {
     ".": {
