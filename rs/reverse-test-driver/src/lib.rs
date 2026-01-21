@@ -48,6 +48,7 @@ pub fn run_reverse_test(test_name: &str) {
             &type_name,
             "-o",
             &generated_rs_path,
+            "--strict"
         ])
         .current_dir(".")
         .output()

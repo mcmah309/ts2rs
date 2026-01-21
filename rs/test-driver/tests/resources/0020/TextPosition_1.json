@@ -1,0 +1,23 @@
+{
+  "text": "dynamic content",
+  "start": {
+    "path": [
+      { "index": 0, "tagName": "BODY", "id": null },
+      { "index": 1, "tagName": "DIV", "id": "main-container" },
+      { "index": 0, "tagName": "P", "id": null },
+      { "index": 1, "tagName": "B", "id": null },
+      { "index": 0, "tagName": null, "id": null }
+    ],
+    "offset": 2
+  },
+  "end": {
+    "path": [
+      { "index": 0, "tagName": "BODY", "id": null },
+      { "index": 1, "tagName": "DIV", "id": "main-container" },
+      { "index": 0, "tagName": "P", "id": null },
+      { "index": 3, "tagName": "SPAN", "id": "highlight-end" },
+      { "index": 0, "tagName": null, "id": null }
+    ],
+    "offset": 7
+  }
+}

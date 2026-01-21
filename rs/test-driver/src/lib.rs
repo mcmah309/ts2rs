@@ -71,6 +71,7 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
             type_name,
             "-o",
             generated_rs_path,
+            "--strict",
         ])
         .output()
         .expect("Failed to run ts2rs CLI");
