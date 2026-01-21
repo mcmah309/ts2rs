@@ -133,6 +133,8 @@ export class RustGenerator {
       case "json_value":
         return true;
       case "struct":
+        // Anonymous structs (empty name) are converted to Value
+        if (type.name === "") return true;
         return type.fields.some((f) => this.typeUsesSerdeJson(f.type));
       case "array":
         return this.typeUsesSerdeJson(type.elementType);

@@ -613,6 +613,52 @@ export class TypeResolver {
   }
 
   private resolveType(type: Type, sourceFile: SourceFile): ResolvedType {
+    // Check for type parameters first - they cannot be resolved as concrete types
+    if (type.isTypeParameter()) {
+      const typeParamName = type.getSymbol()?.getName();
+      return this.handleValueFallback(
+        `Type parameter '${typeParamName ?? "unknown"}' cannot be resolved to concrete type`,
+        type,
+        sourceFile.getFilePath(),
+      );
+    }
+
+    // Check for type aliases - if the type is an alias to something,
+    // we should resolve the alias, not the underlying type
+    // But skip for built-in aliases
+    const aliasSymbol = type.getAliasSymbol();
+    if (aliasSymbol && !this.isBuiltInAlias(aliasSymbol.getName())) {
+      const aliasName = aliasSymbol.getName();
+      
+      // Skip if it's a type parameter we're tracking
+      if (this.typeParameters.has(aliasName)) {
+        return this.handleValueFallback(
+          `Type parameter '${aliasName}' cannot be resolved to concrete type`,
+          type,
+          sourceFile.getFilePath(),
+        );
+      }
+      
+      const decl = aliasSymbol.getDeclarations()?.[0];
+      if (decl) {
+        const declSourceFile = decl.getSourceFile();
+        
+        if (!this.project.getSourceFile(declSourceFile.getFilePath())) {
+          this.project.addSourceFileAtPath(declSourceFile.getFilePath());
+        }
+        
+        this.resolveTypeByName(declSourceFile, aliasName);
+        
+        if (this.collectedTypes.has(aliasName) || this.processingTypes.has(aliasName)) {
+          return {
+            kind: "struct",
+            name: aliasName,
+            fields: [],
+          };
+        }
+      }
+    }
+
     if (type.isNull()) {
       return { kind: "primitive", type: "null" };
     }
@@ -621,17 +667,7 @@ export class TypeResolver {
       return { kind: "primitive", type: "undefined" };
     }
 
-    if (type.isTypeParameter()) {
-      const typeParamName = type.getSymbol()?.getName();
-      if (typeParamName && this.typeParameters.has(typeParamName)) {
-        // This is a known type parameter, return json_value as a generic placeholder
-        return this.handleValueFallback(
-          `Type parameter '${typeParamName}' cannot be resolved to concrete type`,
-          type,
-          sourceFile.getFilePath(),
-        );
-      }
-    }
+    // Note: Type parameter check is done earlier before alias check
 
     if (type.isString() || type.isStringLiteral()) {
       return { kind: "primitive", type: "string" };
@@ -707,13 +743,16 @@ export class TypeResolver {
 
     // Check for object types with alias symbols (e.g., PackageJson.WorkspaceConfig)
     // This should be checked before generic symbol handling
-    const aliasSymbol = type.getAliasSymbol();
-    if (type.isObject() && aliasSymbol) {
-      const aliasName = aliasSymbol.getName();
+    // Note: aliasSymbol was already checked at the start of resolveType, but that
+    // check handles user-defined type aliases. This block handles special cases
+    // for node_modules types that need different treatment.
+    const nodeModulesAliasSymbol = type.getAliasSymbol();
+    if (type.isObject() && nodeModulesAliasSymbol) {
+      const aliasName = nodeModulesAliasSymbol.getName();
       const properties = type.getProperties();
       
       if (properties.length > 0) {
-        const decl = aliasSymbol.getDeclarations()?.[0];
+        const decl = nodeModulesAliasSymbol.getDeclarations()?.[0];
         
         if (decl) {
           const declSourceFile = decl.getSourceFile();
@@ -856,15 +895,16 @@ export class TypeResolver {
       }
 
       if (this.isInternalType(symbolName)) {
-        return this.handleValueFallback(
-          `Internal TypeScript type '${symbolName}' cannot be converted`,
-          type,
-          sourceFile.getFilePath(),
-        );
-      }
-
-      // Handle custom types by resolving
-      if (!this.isBuiltInType(type)) {
+        // If it's an inline object type with __type symbol, handle it as an anonymous struct
+        if (symbolName === "__type" && type.isObject() && type.getProperties().length > 0) {
+        } else {
+          return this.handleValueFallback(
+            `Internal TypeScript type '${symbolName}' cannot be converted`,
+            type,
+            sourceFile.getFilePath(),
+          );
+        }
+      } else if (!this.isBuiltInType(type)) {
         const decl = symbol.getDeclarations()?.[0];
         if (decl) {
           const declSourceFile = decl.getSourceFile();
@@ -877,7 +917,8 @@ export class TypeResolver {
 
             this.resolveTypeByName(declSourceFile, symbolName);
 
-            if (!this.collectedTypes.has(symbolName)) {
+            // Allow recursive references - if type is being processed, it will be collected later
+            if (!this.collectedTypes.has(symbolName) && !this.processingTypes.has(symbolName)) {
               return this.handleValueFallback(
                 `Type '${symbolName}' could not be fully resolved`,
                 type,
@@ -1073,6 +1114,33 @@ export class TypeResolver {
   private isInternalType(symbolName: string): boolean {
     // Skip internal TypeScript types
     return symbolName.startsWith("__") || symbolName === "Object" || symbolName === "Function";
+  }
+
+  /**
+   * Check if an alias name is a built-in TypeScript type that should not be resolved as a custom type
+   */
+  private isBuiltInAlias(aliasName: string): boolean {
+    const builtInAliases = [
+      "Array",
+      "ReadonlyArray",
+      "Record",
+      "Map",
+      "Set",
+      "Date",
+      "Promise",
+      "Partial",
+      "Required",
+      "Readonly",
+      "Pick",
+      "Omit",
+      "Exclude",
+      "Extract",
+      "NonNullable",
+      "ReturnType",
+      "InstanceType",
+      "Parameters",
+    ];
+    return builtInAliases.includes(aliasName);
   }
 
   /**

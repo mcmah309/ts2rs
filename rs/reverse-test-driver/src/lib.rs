@@ -3,7 +3,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 const OUTPUT_DIR: &str = "/tmp/reverse-test-output";
@@ -22,21 +22,100 @@ pub fn run_reverse_test(test_name: &str) {
         panic!("Test directory {} does not exist", test_dir);
     }
 
-    let expected_json_path = test_path.join("expected.json");
+    let fails_strict_json_path = test_path.join("expected--fails-strict.json");
+    let expected_json_path = if fails_strict_json_path.exists() {
+        fails_strict_json_path
+    } else {
+        test_path.join("expected.json")
+    };
+
     if !expected_json_path.exists() {
-        panic!("expected.json not found in {}", test_dir);
+        panic!("expected.json or expected--fails-strict.json not found in {}", test_dir);
     }
 
-    let expected_json = fs::read_to_string(&expected_json_path)
+    let fails_strict = expected_json_path.file_name().unwrap().to_str().unwrap().contains("--fails-strict");
+    
+    if fails_strict {
+        run_fails_strict_reverse_test(test_name, &expected_json_path);
+    } else {
+        run_normal_reverse_test(test_name, &expected_json_path);
+    }
+}
+
+fn run_fails_strict_reverse_test(test_name: &str, expected_json_path: &Path) {
+    let expected_json = fs::read_to_string(expected_json_path)
         .expect("Failed to read expected.json");
+    let type_name = extract_type_name_from_json(&expected_json);
+    
+    println!("Running reverse test (fails-strict) for: {}", test_name);
+
+    let test_dir = format!("./tests/resources/{}", test_name);
+    let test_path = Path::new(&test_dir);
+    let types_ts_path = test_path.join("types.ts");
+    let generated_rs_path = format!("{}/src/generated.rs", RUST_TEST_BIN_DIR);
+
+    // First: Run with --strict, expect failure
+    let strict_output = Command::new("bun")
+        .args([
+            "run",
+            "../../js/ts2rs/src/cli.ts",
+            "-i",
+            types_ts_path.to_str().unwrap(),
+            "-t",
+            &type_name,
+            "-o",
+            &generated_rs_path,
+            "--strict"
+        ])
+        .current_dir(".")
+        .output()
+        .expect("Failed to run ts2rs CLI");
+
+    if strict_output.status.success() {
+        panic!(
+            "ts2rs CLI unexpectedly succeeded with --strict for type {} (marked as --fails-strict)",
+            type_name
+        );
+    }
+    println!("✓ Correctly failed with --strict: {}", String::from_utf8_lossy(&strict_output.stderr).trim());
+
+    // Second: Run without --strict
+    let output = Command::new("bun")
+        .args([
+            "run",
+            "../../js/ts2rs/src/cli.ts",
+            "-i",
+            types_ts_path.to_str().unwrap(),
+            "-t",
+            &type_name,
+            "-o",
+            &generated_rs_path,
+        ])
+        .current_dir(".")
+        .output()
+        .expect("Failed to run ts2rs CLI");
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        panic!("ts2rs CLI failed without --strict for type {}: {}\n{}", type_name, stderr, stdout);
+    }
+
+    // Continue with full test
+    run_reverse_test_with_expected(test_name, &expected_json, &type_name, expected_json_path, true);
+}
+
+fn run_normal_reverse_test(test_name: &str, expected_json_path: &Path) {
+    let expected_json = fs::read_to_string(expected_json_path)
+        .expect("Failed to read expected.json");
+    let type_name = extract_type_name_from_json(&expected_json);
 
     println!("Running reverse test for: {}", test_name);
 
-    // Generate Rust types from TypeScript
+    let test_dir = format!("./tests/resources/{}", test_name);
+    let test_path = Path::new(&test_dir);
     let types_ts_path = test_path.join("types.ts");
     let generated_rs_path = format!("{}/src/generated.rs", RUST_TEST_BIN_DIR);
-    
-    let type_name = extract_type_name_from_json(&expected_json);
     
     let output = Command::new("bun")
         .args([
@@ -60,6 +139,14 @@ pub fn run_reverse_test(test_name: &str) {
         panic!("ts2rs CLI failed for type {}: {}\n{}", type_name, stderr, stdout);
     }
 
+    run_reverse_test_with_expected(test_name, &expected_json, &type_name, expected_json_path, false);
+}
+
+fn run_reverse_test_with_expected(test_name: &str, expected_json: &str, type_name: &str, expected_json_path: &Path, _is_fails_strict: bool) {
+    let test_dir = format!("./tests/resources/{}", test_name);
+    let test_path = Path::new(&test_dir);
+    let types_ts_path = test_path.join("types.ts");
+
     println!("✓ Generated Rust types for {}", type_name);
 
     let rust_test_template_path = test_path.join("rust_test.rs");
@@ -67,7 +154,7 @@ pub fn run_reverse_test(test_name: &str) {
         fs::read_to_string(&rust_test_template_path)
             .expect("Failed to read rust_test.rs")
     } else {
-        generate_default_rust_test(&type_name, &expected_json)
+        generate_default_rust_test(type_name, expected_json)
     };
 
     let main_rs_content = format!(
