@@ -4,7 +4,14 @@ A TypeScript to Rust type converter for bidirectional JSON serialization. This t
 
 ## Installation
 
-todo Update
+Bun:
+```bash
+bun install ts2rs
+```
+Npm:
+```bash
+npm install ts2rs
+```
 
 ## Usage
 
@@ -12,16 +19,16 @@ todo Update
 
 ```bash
 # Basic usage - convert all exported types
-bun js/ts2rs/src/cli.ts -i input.ts -o output.rs
+bunx ts2rs -i input.ts -o output.rs
 
 # Convert specific types
-bun js/ts2rs/src/cli.ts -i input.ts -o output.rs -t User,Post,Comment
+bunx ts2rs -i input.ts -o output.rs -t User,Post,Comment
 
 # Strict mode - fail on unresolvable types (default is to print warnings and use `serde_json::Value`)
-bun js/ts2rs/src/cli.ts -i input.ts -o output.rs --strict
+bunx ts2rs -i input.ts -o output.rs --strict
 
 # Custom type mappings
-bun js/ts2rs/src/cli.ts -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt:i64
+bunx ts2rs -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt:i64
 ```
 
 #### CLI Options
@@ -36,10 +43,8 @@ bun js/ts2rs/src/cli.ts -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt
 
 ### Programmatic API
 
-todo Update
-
 ```typescript
-import { convert } from './js/ts2rs/src/index';
+import { convert } from 'ts2rs';
 
 const result = await convert({
   entryFile: './src/types.ts',
