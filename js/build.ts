@@ -121,6 +121,7 @@ let debugBundleBuild: ({ name: string } & BuildConfig) = {
     name: "Bundle (Debug)",
     outdir: './dist/bundle',
     packages: 'bundle',
+    target: "node",
     env: 'inline',
 };
 
