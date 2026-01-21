@@ -114,6 +114,38 @@ export class TypeResolver {
     return { kind: "json_value" };
   }
 
+  /**
+   * Check if a resolved type contains json_value anywhere in its structure
+   */
+  private containsJsonValue(type: ResolvedType): boolean {
+    switch (type.kind) {
+      case "json_value":
+        return true;
+      case "struct":
+        return type.fields.some((f) => this.containsJsonValue(f.type));
+      case "array":
+        return this.containsJsonValue(type.elementType);
+      case "option":
+        return this.containsJsonValue(type.innerType);
+      case "box":
+        return this.containsJsonValue(type.innerType);
+      case "tuple":
+        return type.elements.some((e) => this.containsJsonValue(e));
+      case "record":
+        return this.containsJsonValue(type.keyType) || this.containsJsonValue(type.valueType);
+      case "map":
+        return this.containsJsonValue(type.keyType) || this.containsJsonValue(type.valueType);
+      case "set":
+        return this.containsJsonValue(type.elementType);
+      case "union":
+        return type.variants.some((v) => v.type && this.containsJsonValue(v.type));
+      case "type_alias":
+        return this.containsJsonValue(type.aliasedType);
+      default:
+        return false;
+    }
+  }
+
   private resolveAllExportedTypes(sourceFile: SourceFile): void {
     const exportedDeclarations = sourceFile.getExportedDeclarations();
 
@@ -380,6 +412,14 @@ export class TypeResolver {
       
       if (this.isDiscriminatedUnion(unionTypes, declaration.getSourceFile())) {
         const unionType = this.resolveDiscriminatedUnion(name, unionTypes, declaration);
+
+        if (unionType === null) {
+          this.warnings.push(
+            `Discriminated union type '${name}' has unresolvable variants and will be used as serde_json::Value in other types (at ${declaration.getSourceFile().getFilePath()})`
+          );
+          return;
+        }
+        
         this.collectedTypes.set(name, {
           name,
           type: unionType,
@@ -667,6 +707,12 @@ export class TypeResolver {
             fields: [],
           };
         }
+
+        return this.handleValueFallback(
+          `Type '${aliasName}' could not be resolved (may have unresolvable type parameters or variants)`,
+          type,
+          sourceFile.getFilePath(),
+        );
       }
     }
 
@@ -1238,7 +1284,7 @@ export class TypeResolver {
     name: string,
     types: Type[],
     declaration: TypeAliasDeclaration,
-  ): UnionType {
+  ): UnionType | null {
     const sourceFile = declaration.getSourceFile();
     const objectTypes = types.filter(
       (t) => t.isObject() && !t.isNull() && !t.isUndefined(),
@@ -1281,6 +1327,7 @@ export class TypeResolver {
     }
 
     const variants: UnionVariant[] = [];
+    let hasUnresolvableType = false;
 
     for (const t of objectTypes) {
       const discriminantValue = discriminantProp
@@ -1311,6 +1358,10 @@ export class TypeResolver {
           sourceFile,
         );
 
+        if (resolvedType.kind === "json_value" || this.containsJsonValue(resolvedType)) {
+          hasUnresolvableType = true;
+        }
+
         if (isOptional && resolvedType.kind !== "option") {
           resolvedType = { kind: "option", innerType: resolvedType };
         }
@@ -1339,6 +1390,10 @@ export class TypeResolver {
           discriminatorValue: discriminantValue ? String(discriminantValue) : undefined,
         });
       }
+    }
+
+    if (hasUnresolvableType) {
+      return null;
     }
 
     return {
@@ -1403,7 +1458,7 @@ export class TypeResolver {
 
       const resolvedType = this.resolveType(t, sourceFile);
 
-      if (resolvedType.kind === "json_value") {
+      if (resolvedType.kind === "json_value" || this.containsJsonValue(resolvedType)) {
         hasUnresolvableType = true;
       }
 

@@ -5,21 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum Result {
-    Variant0 {
-        ok: bool,
-        value: Value,
-    },
-    Variant1 {
-        ok: bool,
-        error: Value,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiResult {
-    pub result: Result,
+    pub result: Value,
     pub timestamp: String,
 }
