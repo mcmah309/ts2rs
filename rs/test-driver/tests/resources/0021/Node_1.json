@@ -1,0 +1,22 @@
+{
+  "value": "Root Layer",
+  "metadata": {
+    "id": 101,
+    "status": "active"
+  },
+  "child": {
+    "value": "Middle Layer",
+    "metadata": {
+      "id": 102,
+      "permissions": ["read", "write"]
+    },
+    "child": {
+      "value": "Leaf Layer",
+      "metadata": {
+        "id": 103,
+        "is_final": true
+      },
+      "child": null
+    }
+  }
+}

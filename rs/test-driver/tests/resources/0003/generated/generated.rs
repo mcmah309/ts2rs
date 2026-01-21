@@ -13,3 +13,14 @@ pub struct Product {
     pub in_stock: bool,
     pub categories: Vec<String>,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShoppingCart {
+    pub items: Vec<Product>,
+    #[serde(rename = "totalPrice")]
+    pub total_price: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub discount: Option<f64>,
+    pub tags: Vec<String>,
+}

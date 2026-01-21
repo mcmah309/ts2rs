@@ -266,6 +266,17 @@ export class TypeResolver {
 
     let resolvedType = this.resolveType(type, prop.getSourceFile());
 
+    // Check for direct recursive reference that needs Box wrapping
+    // A recursive reference needs Box if:
+    // 1. It's a struct reference to a type being processed
+    // 2. It's not already wrapped in Option or Array (which provide indirection)
+    if (resolvedType.kind === "struct" && resolvedType.name && this.processingTypes.has(resolvedType.name)) {
+      resolvedType = {
+        kind: "box",
+        innerType: resolvedType,
+      };
+    }
+
     if (isOptional && resolvedType.kind !== "option") {
       resolvedType = {
         kind: "option",
@@ -1053,9 +1064,19 @@ export class TypeResolver {
     );
 
     if (nullOrUndefinedTypes.length > 0 && nonNullTypes.length === 1 && nonNullTypes[0]) {
+      let innerType = this.resolveType(nonNullTypes[0], sourceFile);
+      
+      // Check for recursive reference that needs Box wrapping
+      if (innerType.kind === "struct" && innerType.name && this.processingTypes.has(innerType.name)) {
+        innerType = {
+          kind: "box",
+          innerType,
+        };
+      }
+      
       return {
         kind: "option",
-        innerType: this.resolveType(nonNullTypes[0], sourceFile),
+        innerType,
       };
     }
 

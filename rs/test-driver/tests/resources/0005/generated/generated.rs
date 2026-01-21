@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Matrix {
-    pub dimensions: (f64, f64),
-    pub data: Vec<Vec<f64>>,
+pub struct Coordinate {
+    pub position: (f64, f64, f64),
+    pub label: String,
 }

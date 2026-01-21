@@ -14,3 +14,18 @@ pub struct Address {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Person {
+    pub id: f64,
+    #[serde(rename = "firstName")]
+    pub first_name: String,
+    #[serde(rename = "lastName")]
+    pub last_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    pub address: Address,
+    #[serde(rename = "phoneNumbers")]
+    pub phone_numbers: Vec<String>,
+}

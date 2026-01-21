@@ -458,6 +458,9 @@ export class RustGenerator {
       case "option":
         return `Option<${this.resolvedTypeToRust(type.innerType)}>`;
 
+      case "box":
+        return `Box<${this.resolvedTypeToRust(type.innerType)}>`;
+
       case "struct":
         if (type.name) {
           return type.name;

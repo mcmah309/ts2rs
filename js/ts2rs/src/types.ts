@@ -10,6 +10,7 @@ export type ResolvedType =
   | MapType             // Map<K, V>
   | SetType             // Set<T>
   | OptionType          // T | null | undefined
+  | BoxType             // Box<T> for recursive types
   | StructType          // interface { ... }
   | EnumType            // enum { ... }
   | UnionType           // type T = A | B | C
@@ -63,6 +64,11 @@ export interface SetType {
 
 export interface OptionType {
   kind: "option";
+  innerType: ResolvedType;
+}
+
+export interface BoxType {
+  kind: "box";
   innerType: ResolvedType;
 }
 
