@@ -395,3 +395,31 @@ describe("convert - Output File", () => {
     fs.unlinkSync(outputPath);
   });
 });
+
+describe("convert - Cross-package types", () => {
+  test("should convert types from test-package2 including imported and nested types", async () => {
+    // This tests the CLI scenario: bun run ./ts2rs/src/cli.bundle.ts -i test-package2/src/index.ts
+    const testPackage2Path = path.resolve(__dirname, "../../test-package2/src/index.ts");
+    
+    const result = await convert({
+      entryFile: testPackage2Path,
+    });
+
+    expect(result.rustCode).toContain("pub struct Task");
+    expect(result.rustCode).toContain("pub title: String");
+    expect(result.rustCode).toContain("pub completed: bool");
+    
+    expect(result.rustCode).toContain("pub enum UserRole");
+    expect(result.rustCode).toContain("pub enum Priority");
+    expect(result.rustCode).toContain("pub struct TestInterface");
+    
+    expect(result.rustCode).toContain("pub struct WorkspaceConfig");
+    expect(result.rustCode).toContain("pub packages:");
+    expect(result.rustCode).toContain("pub nohoist:");
+    
+    expect(result.rustCode).toContain("pub assigned_to: UserRole");
+    expect(result.rustCode).toContain("pub priority: Priority");
+    expect(result.rustCode).toContain("pub test1: TestInterface");
+    expect(result.rustCode).toContain("pub test2: WorkspaceConfig");
+  });
+});

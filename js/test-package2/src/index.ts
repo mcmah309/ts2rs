@@ -7,5 +7,6 @@ export interface Task {
     priority: Priority;
     completed: boolean;
     test1: TestInterface
+    // This should resolve
     test2: PackageJson.WorkspaceConfig
 }

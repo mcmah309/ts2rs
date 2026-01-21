@@ -294,9 +294,23 @@ export class TypeResolver {
   private resolveProperty(prop: PropertySignature): StructField {
     const name = prop.getName();
     const isOptional = prop.hasQuestionToken();
-    const type = prop.getType();
+    const sourceFile = prop.getSourceFile();
 
-    let resolvedType = this.resolveType(type, prop.getSourceFile());
+    const typeNode = prop.getTypeNode();
+    let resolvedType: ResolvedType;
+    
+    if (typeNode && typeNode.getKind() === SyntaxKind.TypeReference) {
+      // Use the type node for TypeReference to preserve alias names
+      resolvedType = this.resolveTypeFromNode(typeNode, sourceFile);
+    } else if (typeNode) {
+      // Use resolveTypeWithNode for other cases to handle unions properly
+      const type = prop.getType();
+      resolvedType = this.resolveTypeWithNode(type, sourceFile, typeNode);
+    } else {
+      // Fallback to resolving from the Type object
+      const type = prop.getType();
+      resolvedType = this.resolveType(type, sourceFile);
+    }
 
     // Check for direct recursive reference that needs Box wrapping
     // A recursive reference needs Box if:
@@ -534,9 +548,14 @@ export class TypeResolver {
               const declaration = this.findTypeDeclaration(sourceFile, typeName);
               if (declaration) {
                 this.resolveTypeByName(sourceFile, typeName);
+                // Check if this is a recursive reference that needs Box wrapping
+                let innerType: ResolvedType = { kind: "struct", name: typeName, fields: [] };
+                if (this.processingTypes.has(typeName)) {
+                  innerType = { kind: "box", innerType };
+                }
                 return {
                   kind: "option",
-                  innerType: { kind: "struct", name: typeName, fields: [] },
+                  innerType,
                 };
               }
             }
@@ -588,26 +607,47 @@ export class TypeResolver {
     if (typeNode.getKind() === SyntaxKind.TypeReference) {
       const typeRef = typeNode.asKind(SyntaxKind.TypeReference);
       if (typeRef) {
-        const typeName = typeRef.getTypeName().getText();
+        const typeNameNode = typeRef.getTypeName();
+        const typeName = typeNameNode.getText();
         
-        if (typeName === "Array") {
-          const typeArgs = typeRef.getTypeArguments();
-          if (typeArgs.length > 0) {
-            return {
-              kind: "array",
-              elementType: this.resolveTypeFromNode(typeArgs[0]!, sourceFile),
-            };
-          }
+        // Handle qualified names (like PackageJson.WorkspaceConfig) by falling through
+        // to the type checker, which has the logic to handle nested types
+        if (typeNameNode.getKind() === SyntaxKind.QualifiedName) {
+          const type = typeNode.getType();
+          return this.resolveType(type, sourceFile);
+        }
+        
+        // Handle built-in generic types by falling through to type checker
+        const builtInGenerics = ["Array", "ReadonlyArray", "Record", "Map", "Set", "Promise", "Readonly", "Partial", "Required", "Pick", "Omit", "Exclude", "Extract"];
+        if (builtInGenerics.includes(typeName)) {
+          const type = typeNode.getType();
+          return this.resolveType(type, sourceFile);
         }
         
         // Try to resolve as a local type
         const declaration = this.findTypeDeclaration(sourceFile, typeName);
         if (declaration) {
           this.resolveTypeByName(sourceFile, typeName);
-          return { kind: "struct", name: typeName, fields: [] };
+          // Check if the type was actually collected (it might not be if it has unresolvable variants)
+          if (this.collectedTypes.has(typeName) || this.processingTypes.has(typeName)) {
+            return { kind: "struct", name: typeName, fields: [] };
+          }
+          // Type wasn't collected - fall back to Value
+          return this.handleValueFallback(
+            `Type '${typeName}' could not be fully resolved`,
+            undefined,
+            sourceFile.getFilePath(),
+          );
+        }
+  
+        const importedType = this.tryResolveImportedType(typeName, sourceFile);
+        if (importedType !== null) {
+          return importedType;
         }
         
-        return this.resolveImportedType(typeName, sourceFile);
+        // Fallback - use type checker
+        const type = typeNode.getType();
+        return this.resolveType(type, sourceFile);
       }
     }
     
@@ -622,10 +662,10 @@ export class TypeResolver {
   }
 
   /**
-   * Resolve an imported type by its name
+   * Try to resolve an imported type by its name.
+   * Returns null if the type is not found as an import (to allow fallback to other resolution methods).
    */
-  private resolveImportedType(typeName: string, sourceFile: SourceFile): ResolvedType {
-    // Look for the import declaration
+  private tryResolveImportedType(typeName: string, sourceFile: SourceFile): ResolvedType | null {
     for (const importDecl of sourceFile.getImportDeclarations()) {
       const namedImports = importDecl.getNamedImports();
       for (const namedImport of namedImports) {
@@ -650,8 +690,23 @@ export class TypeResolver {
               return { kind: "struct", name: typeName, fields: [] };
             }
           }
+          // Found the import but couldn't resolve it - fall through to other resolution
+          return null;
         }
       }
+    }
+    
+    // Not found as an import
+    return null;
+  }
+
+  /**
+   * Resolve an imported type by its name
+   */
+  private resolveImportedType(typeName: string, sourceFile: SourceFile): ResolvedType {
+    const result = this.tryResolveImportedType(typeName, sourceFile);
+    if (result !== null) {
+      return result;
     }
     
     // Could not resolve, return json_value
@@ -692,26 +747,35 @@ export class TypeResolver {
       const decl = aliasSymbol.getDeclarations()?.[0];
       if (decl) {
         const declSourceFile = decl.getSourceFile();
+        const declFilePath = declSourceFile.getFilePath();
         
-        if (!this.project.getSourceFile(declSourceFile.getFilePath())) {
-          this.project.addSourceFileAtPath(declSourceFile.getFilePath());
+        if (!this.project.getSourceFile(declFilePath)) {
+          this.project.addSourceFileAtPath(declFilePath);
         }
         
-        this.resolveTypeByName(declSourceFile, aliasName);
-        
-        if (this.collectedTypes.has(aliasName) || this.processingTypes.has(aliasName)) {
-          return {
-            kind: "struct",
-            name: aliasName,
-            fields: [],
-          };
-        }
+        // Check if this is a top-level type or a nested type (e.g., in a namespace)
+        // Nested types will fail findTypeDeclaration, so we should skip resolveTypeByName
+        // and let the later code handle them
+        const typeDecl = this.findTypeDeclaration(declSourceFile, aliasName);
+        if (typeDecl) {
+          this.resolveTypeByName(declSourceFile, aliasName);
+          
+          if (this.collectedTypes.has(aliasName) || this.processingTypes.has(aliasName)) {
+            return {
+              kind: "struct",
+              name: aliasName,
+              fields: [],
+            };
+          }
 
-        return this.handleValueFallback(
-          `Type '${aliasName}' could not be resolved (may have unresolvable type parameters or variants)`,
-          type,
-          sourceFile.getFilePath(),
-        );
+          return this.handleValueFallback(
+            `Type '${aliasName}' could not be resolved (may have unresolvable type parameters or variants)`,
+            type,
+            sourceFile.getFilePath(),
+          );
+        }
+        // If typeDecl is null, this is likely a nested type (e.g., PackageJson.WorkspaceConfig)
+        // Fall through to the node_modules handling code below
       }
     }
 

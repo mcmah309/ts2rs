@@ -17,5 +17,6 @@ export enum Priority {
 export interface TestInterface {
     data1: string;
     data2: number;
+    // This should not resolve since it includes (bigint | symbol | null | undefined)
     dataFromOtherPackage: Primitive;
 }
