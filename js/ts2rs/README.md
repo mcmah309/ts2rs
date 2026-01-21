@@ -244,8 +244,8 @@ cargo test --package reverse-test-driver -- --test-threads=1
 | `T \| null` | `Option<T>` |
 | `T \| undefined` | `Option<T>` |
 | `Record<string, T>` | `std::collections::HashMap<String, T>` |
-| `Map<T, TT>` | `std::collections::HashMap<T, TT>` |
-| `Set<T>` | `std::collections::HashSet<T>` |
+| `Map<string, T>` | `std::collections::HashMap<string, T>` |
+| `Set<string>` | `std::collections::HashSet<string>` |
 | `any` | `serde_json::Value` |
 | `unknown` | `serde_json::Value` |
 | `Date` | `String` (custom mapping recommended) |

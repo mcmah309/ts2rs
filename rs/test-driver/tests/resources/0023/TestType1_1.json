@@ -1,0 +1,11 @@
+{
+    "set": [
+        "value2"
+    ],
+    "map": {
+        "key_alpha": {
+            "field1": 100,
+            "field2": "optional description"
+        }
+    }
+}
