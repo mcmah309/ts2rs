@@ -1,5 +1,5 @@
 /**
- * Tests for ts-to-rs type conversion
+ * Basic tests, most tests are in the `rs/*test*` crates
  */
 
 import { describe, test, expect } from "bun:test";
@@ -220,7 +220,6 @@ describe("convert - Output File", () => {
     const outputPath = path.join(fixturesDir, "output.rs");
     const fs = await import("fs");
 
-    // Clean up before test
     if (fs.existsSync(outputPath)) {
       fs.unlinkSync(outputPath);
     }
@@ -230,7 +229,6 @@ describe("convert - Output File", () => {
     const content = fs.readFileSync(outputPath, "utf-8");
     expect(content).toContain("pub struct BasicTypes");
 
-    // Clean up after test
     fs.unlinkSync(outputPath);
   });
 });
