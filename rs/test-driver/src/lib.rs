@@ -8,17 +8,14 @@ use std::process::Command;
 
 const OUTPUT_DIR: &str = "/tmp/ts2rs-test-output";
 
-/// Check if a JSON file name has the --fails-strict marker
 fn has_fails_strict_marker(file_name: &str) -> bool {
     file_name.contains("--fails-strict")
 }
 
 /// Extract the type name from a JSON file name, handling _N suffixes and --fails-strict markers
 fn extract_type_name(file_name: &str) -> String {
-    // Remove --fails-strict marker if present
     let clean_name = file_name.replace("--fails-strict", "");
 
-    // Extract type name by removing trailing _N suffix
     if let Some(pos) = clean_name.rfind('_') {
         let suffix = &clean_name[pos + 1..];
         if suffix.chars().all(|c| c.is_numeric()) {
@@ -80,6 +77,7 @@ fn run_fails_strict_test(test_name: &str, type_name: &str, json_path: &Path) {
     );
 
     let types_ts_path = format!("./tests/resources/{}/types.ts", test_name);
+    let generated_rs_test_path = format!("./tests/resources/{}/generated/{}.rs", test_name, json_file_name);
     let generated_rs_path = "../test-crate/src/generated.rs";
 
     // First: Run with --strict, expect failure
@@ -92,7 +90,7 @@ fn run_fails_strict_test(test_name: &str, type_name: &str, json_path: &Path) {
             "-t",
             type_name,
             "-o",
-            generated_rs_path,
+            &*generated_rs_test_path,
             "--strict",
         ])
         .output()
@@ -119,7 +117,7 @@ fn run_fails_strict_test(test_name: &str, type_name: &str, json_path: &Path) {
             "-t",
             type_name,
             "-o",
-            generated_rs_path,
+            &*generated_rs_test_path,
         ])
         .output()
         .expect("Failed to run ts2rs CLI");
@@ -131,6 +129,9 @@ fn run_fails_strict_test(test_name: &str, type_name: &str, json_path: &Path) {
             String::from_utf8_lossy(&output.stderr)
         );
     }
+
+    fs::copy(generated_rs_test_path, generated_rs_path)
+        .expect("Failed to copy generated.rs to test-crate");
 
     let json_data = fs::read_to_string(json_path)
         .unwrap_or_else(|_| panic!("Failed to read JSON file: {:?}", json_path));
