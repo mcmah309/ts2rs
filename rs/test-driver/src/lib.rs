@@ -193,7 +193,7 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
     println!("Testing: {} with {}", type_name, json_file_name);
 
     let types_ts_path = format!("./tests/resources/{}/types.ts", test_name);
-    let generated_rs_test_path = format!("./tests/resources/{}/generated/generated.rs", test_name);
+    let generated_rs_test_path = format!("./tests/resources/{}/generated/{}.rs", test_name, json_file_name);
     let generated_rs_path = "../test-crate/src/generated.rs";
 
     let output = Command::new("bun")

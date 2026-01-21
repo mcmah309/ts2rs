@@ -1,10 +1,15 @@
 {
-  "name": "Jordan Smith",
-  "age": 34,
-  "isActive": true,
+  "name": "Smith Jordan",
+  "age": 27,
+  "isActive": false,
   "data": {
-    "roles": ["admin", "editor"],
-    "version": 1.2
+    "roles": [
+      "dingdong"
+    ],
+    "version": 1
   },
-  "metadata": "Source: Internal Database"
+  "metadata": {
+    "father": "Sam the man",
+    "myGuy": "myGuy"
+  }
 }
