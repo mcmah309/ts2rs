@@ -13,7 +13,7 @@
   "compilerOptions": { // Project specific compiler options
     "noEmit": false,
     "rootDir": ".", // This is set to here so `tests` will not error. But in `../build.ts` we set to `./src`
-    "composite": true, // Allows using references to this project
+    "composite": true // Allows using references to this project
   },
   "references": [
     {
