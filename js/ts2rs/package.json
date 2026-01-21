@@ -16,7 +16,7 @@
     "codegen"
   ],
   "type": "module",
-  "description": "Generate Rust type definitions from TypeScript types, enabling seamless data interchange between TypeScript and Rust applications via JSON. Nested types are traversed, even types in different packages.",
+  "description": "Generate Rust type from TypeScript types, enabling seamless data interchange between TypeScript and Rust applications via JSON. Nested types are traversed, even types in different packages.",
   "bin": {
     "ts2rs": "./dist/bundle/cli.bundle.js"
   },
