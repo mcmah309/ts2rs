@@ -14,14 +14,6 @@
     "noEmit": false,
     "rootDir": ".", // This is set to here so `tests` will not error. But in `../build.ts` we set to `./src`
     "composite": true, // Allows using references to this project
-    "paths": {
-      "test-package1": [
-        "../test-package1/src"
-      ],
-      "test-package1/*": [
-        "../test-package1/src/*"
-      ]
-    }
   },
   "references": [
     {

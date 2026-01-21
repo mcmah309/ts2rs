@@ -101,8 +101,8 @@ async function syncConfigs() {
       
       // Map 'package-name' to ['../other-package/src']
       // and 'package-name/*' to ['../other-package/src/*']
-      paths[dep.name] = [relPathToDepSrc];
-      paths[`${dep.name}/*`] = [`${relPathToDepSrc}/*`];
+      // paths[dep.name] = [relPathToDepSrc];
+      // paths[`${dep.name}/*`] = [`${relPathToDepSrc}/*`];
     }
 
     if (Object.keys(paths).length > 0) {
