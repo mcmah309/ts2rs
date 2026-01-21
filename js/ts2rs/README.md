@@ -213,7 +213,7 @@ In **strict mode** (`--strict`), these cases throw errors instead of warnings, e
 Set `DEBUG=1` environment variable for stack traces in the cli:
 
 ```bash
-DEBUG=1 bun js/ts2rs/src/cli.bundle.ts -i input.ts
+DEBUG=1 bun ts2rs -i input.ts
 ```
 
 ## Testing
