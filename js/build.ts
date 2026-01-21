@@ -131,8 +131,8 @@ let releaseBundleBuild: ({ name: string } & BuildConfig) = {
     minify: true,
     sourcemap: "external",
     drop: [
-        ...identMethods("console", [ // Note `error` and 'warn' is missing on purpose
-            "info", "debug", "trace", "log", "assert", "table",
+        ...identMethods("console", [ // Note `error`, 'warn', and 'log' is missing on purpose
+            "info", "debug", "trace", "assert", "table",
             "dir", "dirxml", "count", "countReset", "time",
             "timeEnd", "timeLog", "group", "groupCollapsed", "groupEnd"
         ]),
