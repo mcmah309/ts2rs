@@ -1,6 +1,20 @@
 {
   "name": "ts2rs",
   "version": "0.0.1",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "mcmah309"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcmah309/ts2rs.git"
+  },
+  "keywords": [
+    "typescript",
+    "rust",
+    "serde",
+    "codegen"
+  ],
   "type": "module",
   "description": "Deeply inspects typescript types to convert to rust types for bidirectional JSON serialization",
   "bin": {
