@@ -41,7 +41,7 @@
     "watch": "bun run ../build.ts --watch",
     "test": "bun test",
     "generate": "bun run ./src/cli.bundle.ts",
-    "publish": "bun run build:release && bun publish"
+    "prepublishOnly": "bun run build:release"
   },
   "dependencies": {
     "commander": "catalog:",
