@@ -1,11 +1,12 @@
 {
   "name": "test-package1",
+  "private": true,
   "version": "0.0.1",
   "type": "module",
   "description": "test package",
   "exports": {
     ".": {
-      "bun": "./src/index.ts",
+      "bun": "./src/lib/index.ts",
       "types": "./dist/lib/index.d.ts",
       "import": "./dist/lib/index.js",
       "default": "./dist/lib/index.js"
