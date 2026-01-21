@@ -26,7 +26,7 @@ After: {:?}", value, lossless_test);
 }
 
 // Write to output file
-let output_path = "/tmp/ts-rs-test-output/output.json";
+let output_path = "/tmp/ts2rs-test-output/output.json";
 fs::write(output_path, output_json)
 .expect("Failed to write output JSON");
 }

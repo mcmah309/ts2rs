@@ -41,7 +41,7 @@ pub fn run_reverse_test(test_name: &str) {
     let output = Command::new("bun")
         .args([
             "run",
-            "../../js/ts-rs/src/cli.ts",
+            "../../js/ts2rs/src/cli.ts",
             "-i",
             types_ts_path.to_str().unwrap(),
             "-t",
@@ -51,12 +51,12 @@ pub fn run_reverse_test(test_name: &str) {
         ])
         .current_dir(".")
         .output()
-        .expect("Failed to run ts-rs CLI");
+        .expect("Failed to run ts2rs CLI");
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stdout = String::from_utf8_lossy(&output.stdout);
-        panic!("ts-rs CLI failed for type {}: {}\n{}", type_name, stderr, stdout);
+        panic!("ts2rs CLI failed for type {}: {}\n{}", type_name, stderr, stdout);
     }
 
     println!("✓ Generated Rust types for {}", type_name);

@@ -1,17 +1,17 @@
 # Architecture Documentation
 
-This document provides detailed technical information about the internal architecture of ts-rs.
+This document provides detailed technical information about the internal architecture of ts2rs.
 
 ## Overview
 
-ts-rs is a bidirectional type converter that bridges TypeScript and Rust ecosystems through JSON serialization. The tool parses TypeScript types, resolves them to an intermediate representation, and generates corresponding Rust types with serde annotations.
+ts2rs is a bidirectional type converter that bridges TypeScript and Rust ecosystems through JSON serialization. The tool parses TypeScript types, resolves them to an intermediate representation, and generates corresponding Rust types with serde annotations.
 
 ## Directory Structure
 
 ```
-ts-rs/
+ts2rs/
 ├── js/
-│   └── ts-rs/
+│   └── ts2rs/
 │       ├── src/
 │       │   ├── cli.ts          # Command-line interface
 │       │   ├── index.ts        # Main API exports
@@ -380,7 +380,7 @@ Potential areas for enhancement:
 Set `DEBUG=1` environment variable for stack traces:
 
 ```bash
-DEBUG=1 bun js/ts-rs/src/cli.ts -i input.ts
+DEBUG=1 bun js/ts2rs/src/cli.ts -i input.ts
 ```
 
 ### Common Issues

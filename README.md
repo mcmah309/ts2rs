@@ -1,4 +1,4 @@
-# ts-rs
+# ts2rs
 
 A TypeScript to Rust type converter for bidirectional JSON serialization. This tool generates Rust type definitions from TypeScript types, enabling seamless data interchange between TypeScript and Rust applications via JSON. Nested types are traversed, even types in different packages.
 
@@ -12,16 +12,16 @@ todo Update
 
 ```bash
 # Basic usage - convert all exported types
-bun js/ts-rs/src/cli.ts -i input.ts -o output.rs
+bun js/ts2rs/src/cli.ts -i input.ts -o output.rs
 
 # Convert specific types
-bun js/ts-rs/src/cli.ts -i input.ts -o output.rs -t User,Post,Comment
+bun js/ts2rs/src/cli.ts -i input.ts -o output.rs -t User,Post,Comment
 
 # Strict mode - fail on unresolvable types (default is to print warnings and use `serde_json::Value`)
-bun js/ts-rs/src/cli.ts -i input.ts -o output.rs --strict
+bun js/ts2rs/src/cli.ts -i input.ts -o output.rs --strict
 
 # Custom type mappings
-bun js/ts-rs/src/cli.ts -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt:i64
+bun js/ts2rs/src/cli.ts -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt:i64
 ```
 
 #### CLI Options
@@ -39,7 +39,7 @@ bun js/ts-rs/src/cli.ts -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt
 todo Update
 
 ```typescript
-import { convert } from './js/ts-rs/src/index';
+import { convert } from './js/ts2rs/src/index';
 
 const result = await convert({
   entryFile: './src/types.ts',

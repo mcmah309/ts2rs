@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::collections::{HashMap};
 
-const OUTPUT_DIR: &str = "/tmp/ts-rs-test-output";
+const OUTPUT_DIR: &str = "/tmp/ts2rs-test-output";
 
 pub fn run(test_name: &str) {
     let _ = fs::remove_dir_all(OUTPUT_DIR);
@@ -64,7 +64,7 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
     let output = Command::new("bun")
         .args([
             "run",
-            "../../js/ts-rs/src/cli.ts",
+            "../../js/ts2rs/src/cli.ts",
             "-i",
             &types_ts_path,
             "-t",
@@ -73,11 +73,11 @@ fn run_single_test(test_name: &str, type_name: &str, json_path: &Path) {
             generated_rs_path,
         ])
         .output()
-        .expect("Failed to run ts-rs CLI");
+        .expect("Failed to run ts2rs CLI");
 
     if !output.status.success() {
         panic!(
-            "ts-rs CLI failed for type {}: {}",
+            "ts2rs CLI failed for type {}: {}",
             type_name,
             String::from_utf8_lossy(&output.stderr)
         );

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /// <reference types="bun" />
 /**
- * ts-rs CLI
+ * ts2rs CLI
  *
  * Command-line interface for converting TypeScript types to Rust types
  */
