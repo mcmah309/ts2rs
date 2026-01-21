@@ -11,7 +11,6 @@ import {
   InterfaceDeclaration,
   EnumDeclaration,
   Node,
-  Symbol as TsSymbol,
   SyntaxKind,
   PropertySignature,
   ts,
@@ -180,7 +179,6 @@ export class TypeResolver {
 
     // Check in imported files
     for (const importDecl of sourceFile.getImportDeclarations()) {
-      const moduleSpecifier = importDecl.getModuleSpecifierValue();
       const resolvedSourceFile = importDecl.getModuleSpecifierSourceFile();
 
       if (resolvedSourceFile) {
@@ -221,7 +219,7 @@ export class TypeResolver {
     try {
       for (const extendedType of declaration.getExtends()) {
         const baseType = extendedType.getType();
-        const baseFields = this.extractFieldsFromType(baseType, declaration.getSourceFile());
+        const baseFields = this.extractFieldsFromType(baseType);
         fields.push(...baseFields);
       }
 
@@ -247,7 +245,7 @@ export class TypeResolver {
     }
   }
 
-  private extractFieldsFromType(type: Type, sourceFile: SourceFile): StructField[] {
+  private extractFieldsFromType(type: Type): StructField[] {
     const fields: StructField[] = [];
     const properties = type.getProperties();
 
@@ -264,7 +262,6 @@ export class TypeResolver {
   private resolveProperty(prop: PropertySignature): StructField {
     const name = prop.getName();
     const isOptional = prop.hasQuestionToken();
-    const typeNode = prop.getTypeNode();
     const type = prop.getType();
 
     let resolvedType = this.resolveType(type, prop.getSourceFile());
@@ -287,7 +284,6 @@ export class TypeResolver {
   private resolveTypeAlias(declaration: TypeAliasDeclaration): void {
     const name = declaration.getName();
     const type = declaration.getType();
-    const typeNode = declaration.getTypeNode();
 
     // Check for tuple types first (before object check, since tuples are objects)
     if (type.isTuple()) {

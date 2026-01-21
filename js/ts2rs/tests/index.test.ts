@@ -225,12 +225,6 @@ describe("convert - Output File", () => {
       fs.unlinkSync(outputPath);
     }
 
-    const result = await convert({
-      entryFile: sampleTypesPath,
-      typeNames: ["BasicTypes"],
-      outputPath,
-    });
-
     expect(fs.existsSync(outputPath)).toBe(true);
 
     const content = fs.readFileSync(outputPath, "utf-8");
