@@ -46,6 +46,17 @@ export class RustGenerator {
   }
 
   /**
+   * Add custom type annotations to the lines array (before the default #[derive])
+   */
+  private addCustomTypeAnnotations(lines: string[]): void {
+    if (this.options.customTypeAnnotations) {
+      for (const annotation of this.options.customTypeAnnotations) {
+        lines.push(annotation);
+      }
+    }
+  }
+
+  /**
    * Generate Rust code from collected types
    */
   generate(collectedTypes: CollectedType[]): ConversionResult {
@@ -283,6 +294,7 @@ export class RustGenerator {
       lines.push(this.formatDocComment(type.documentation));
     }
 
+    this.addCustomTypeAnnotations(lines);
     lines.push("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
     lines.push('#[serde(rename_all = "camelCase")]');
 
@@ -361,7 +373,8 @@ export class RustGenerator {
       lines.push(this.formatDocComment(type.documentation));
     }
 
-    lines.push("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
+    this.addCustomTypeAnnotations(lines);
+    lines.push("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]")
 
     // Note: We don't use #[repr(u32)] for numeric enums because serde doesn't 
     // support automatic numeric serialization without the serde_repr crate.
@@ -396,6 +409,7 @@ export class RustGenerator {
       lines.push(this.formatDocComment(type.documentation));
     }
 
+    this.addCustomTypeAnnotations(lines);
     lines.push("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
 
     // Use tagged representation only if we have a string discriminator

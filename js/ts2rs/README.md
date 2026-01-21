@@ -29,6 +29,9 @@ bunx ts2rs -i input.ts -o output.rs --strict
 
 # Custom type mappings
 bunx ts2rs -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt:i64
+
+# Custom type annotations (added before default #[derive] on all types)
+bunx ts2rs -i input.ts -o output.rs -a "#[my_macro]" -a "#[derive(MyTrait)]"
 ```
 
 #### CLI Options
@@ -37,6 +40,7 @@ bunx ts2rs -i input.ts -o output.rs -m Date:chrono::DateTime,BigInt:i64
 - `-o, --output <path>`: Output path for the generated Rust file
 - `-t, --types <names>`: Comma-separated list of type names to convert
 - `-m, --mapping <mappings>`: Custom type mappings (format: `TypeScriptName:RustName,...`)
+- `-a, --annotation <annotation>`: Custom type annotations to add before `#[derive]` on all types (can be specified multiple times)
 - `-s, --strict`: Strict mode - fail on unresolvable types
 - `--version`: Show version
 - `-h, --help`: Show help
@@ -58,6 +62,10 @@ const result = await convert({
       fieldAnnotations: ['#[serde(with = "my_type_serde")]'],
     },
   },
+  customTypeAnnotations: [ // optional - added before #[derive] on all types
+    '#[my_macro]',
+    '#[derive(MyTrait)]',
+  ],
 });
 
 console.log(result.rustCode);

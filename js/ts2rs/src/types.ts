@@ -191,6 +191,12 @@ export interface ConversionOptions {
   customFooter?: string;
 
   /**
+   * Custom annotations to add before the default #[derive(...)] on all generated types.
+   * e.g., ['#[derive(MyTrait)]', '#[my_macro]']
+   */
+  customTypeAnnotations?: string[];
+
+  /**
    * Strict mode: fail on unresolvable types instead of falling back to serde_json::Value
    */
   strict?: boolean;

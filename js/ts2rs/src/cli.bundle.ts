@@ -47,6 +47,10 @@ program
     "Path to a file containing custom footer text",
   )
   .option(
+    "-a, --annotation <annotations>",
+    "Custom type annotations to add before #[derive] on all types (comma-separated). e.g., '#[my_macro],#[derive(Hash)]'",
+  )
+  .option(
     "-s, --strict",
     "Strict mode: fail on unresolvable types instead of falling back to serde_json::Value",
   )
@@ -105,6 +109,10 @@ program
         customFooter = fs.readFileSync(footerPath, "utf-8").trim();
       }
 
+      const customTypeAnnotations = options.annotation
+        ? options.annotation.split(",").map((a: string) => a.trim())
+        : undefined;
+
       const result = await convert({
         entryFile: inputPath,
         outputPath,
@@ -112,6 +120,7 @@ program
         customTypeMappings,
         customHeader,
         customFooter,
+        customTypeAnnotations,
         strict: options.strict,
       });
 

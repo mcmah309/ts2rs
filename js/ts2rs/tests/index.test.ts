@@ -303,6 +303,59 @@ describe("convert - Custom Header and Footer", () => {
   });
 });
 
+describe("convert - Custom Type Annotations", () => {
+  test("should add single custom annotation before derive", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["BasicTypes"],
+      customTypeAnnotations: ["#[my_macro]"],
+    });
+
+    expect(result.rustCode).toContain("#[my_macro]");
+    const customIndex = result.rustCode.indexOf("#[my_macro]");
+    const deriveIndex = result.rustCode.indexOf("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
+    expect(customIndex).toBeLessThan(deriveIndex);
+  });
+
+  test("should add multiple custom annotations before derive", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["BasicTypes"],
+      customTypeAnnotations: ["#[derive(Hash)]", "#[cfg_attr(test, derive(Default))]"],
+    });
+
+    expect(result.rustCode).toContain("#[derive(Hash)]");
+    expect(result.rustCode).toContain("#[cfg_attr(test, derive(Default))]");
+    const hashIndex = result.rustCode.indexOf("#[derive(Hash)]");
+    const cfgIndex = result.rustCode.indexOf("#[cfg_attr(test, derive(Default))]");
+    const deriveIndex = result.rustCode.indexOf("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
+    expect(hashIndex).toBeLessThan(deriveIndex);
+    expect(cfgIndex).toBeLessThan(deriveIndex);
+  });
+
+  test("should add custom annotations to enums", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["Status"],
+      customTypeAnnotations: ["#[my_enum_macro]"],
+    });
+
+    expect(result.rustCode).toContain("#[my_enum_macro]");
+    expect(result.rustCode).toContain("pub enum Status");
+  });
+
+  test("should add custom annotations to discriminated unions", async () => {
+    const result = await convert({
+      entryFile: sampleTypesPath,
+      typeNames: ["Shape"],
+      customTypeAnnotations: ["#[my_union_macro]"],
+    });
+
+    expect(result.rustCode).toContain("#[my_union_macro]");
+    expect(result.rustCode).toContain("pub enum Shape");
+  });
+});
+
 describe("convert - Documentation", () => {
   test("should include documentation comments", async () => {
     const result = await convert({
