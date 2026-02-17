@@ -141,6 +141,42 @@ export class TypeResolver {
         return type.variants.some((v) => v.type && this.containsJsonValue(v.type));
       case "type_alias":
         return this.containsJsonValue(type.aliasedType);
+      case "type_parameter":
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Check if a resolved type contains type_parameter anywhere in its structure.
+   * Used to detect unresolvable generic types in union contexts where
+   * type parameters on the generated type are not yet supported.
+   */
+  private containsTypeParameter(type: ResolvedType): boolean {
+    switch (type.kind) {
+      case "type_parameter":
+        return true;
+      case "struct":
+        return type.fields.some((f) => this.containsTypeParameter(f.type));
+      case "array":
+        return this.containsTypeParameter(type.elementType);
+      case "option":
+        return this.containsTypeParameter(type.innerType);
+      case "box":
+        return this.containsTypeParameter(type.innerType);
+      case "tuple":
+        return type.elements.some((e) => this.containsTypeParameter(e));
+      case "record":
+        return this.containsTypeParameter(type.keyType) || this.containsTypeParameter(type.valueType);
+      case "map":
+        return this.containsTypeParameter(type.keyType) || this.containsTypeParameter(type.valueType);
+      case "set":
+        return this.containsTypeParameter(type.elementType);
+      case "union":
+        return type.variants.some((v) => v.type && this.containsTypeParameter(v.type));
+      case "type_alias":
+        return this.containsTypeParameter(type.aliasedType);
       default:
         return false;
     }
@@ -342,6 +378,24 @@ export class TypeResolver {
     const name = declaration.getName();
     const type = declaration.getType();
 
+    // Track type parameters for this declaration (like resolveInterface does)
+    const typeParams = declaration.getTypeParameters().map((p) => p.getName());
+    const previousTypeParams = new Set(this.typeParameters);
+    typeParams.forEach((tp) => this.typeParameters.add(tp));
+
+    try {
+      this.resolveTypeAliasInner(name, type, declaration, typeParams);
+    } finally {
+      this.typeParameters = previousTypeParams;
+    }
+  }
+
+  private resolveTypeAliasInner(
+    name: string,
+    type: Type,
+    declaration: TypeAliasDeclaration,
+    typeParams: string[],
+  ): void {
     // Check for tuple types first (before object check, since tuples are objects)
     if (type.isTuple()) {
       const tupleTypes = type.getTupleElements();
@@ -410,6 +464,7 @@ export class TypeResolver {
           name,
           fields,
           documentation: this.getDocumentation(declaration),
+          typeParameters: typeParams.length > 0 ? typeParams : undefined,
         };
 
         this.collectedTypes.set(name, {
@@ -545,6 +600,14 @@ export class TypeResolver {
             const typeRef = nonNullNode.asKind(SyntaxKind.TypeReference);
             if (typeRef) {
               const typeName = typeRef.getTypeName().getText();
+
+              if (this.typeParameters.has(typeName)) {
+                return {
+                  kind: "option",
+                  innerType: { kind: "type_parameter", name: typeName },
+                };
+              }
+
               const declaration = this.findTypeDeclaration(sourceFile, typeName);
               if (declaration) {
                 this.resolveTypeByName(sourceFile, typeName);
@@ -615,6 +678,10 @@ export class TypeResolver {
         if (typeNameNode.getKind() === SyntaxKind.QualifiedName) {
           const type = typeNode.getType();
           return this.resolveType(type, sourceFile);
+        }
+
+        if (this.typeParameters.has(typeName)) {
+          return { kind: "type_parameter", name: typeName };
         }
         
         // Handle built-in generic types by falling through to type checker
@@ -718,9 +785,13 @@ export class TypeResolver {
   }
 
   private resolveType(type: Type, sourceFile: SourceFile): ResolvedType {
-    // Check for type parameters first - they cannot be resolved as concrete types
     if (type.isTypeParameter()) {
       const typeParamName = type.getSymbol()?.getName();
+      // If this type parameter is being tracked (we're inside a generic declaration),
+      // preserve it as a TypeParameterType
+      if (typeParamName && this.typeParameters.has(typeParamName)) {
+        return { kind: "type_parameter", name: typeParamName };
+      }
       return this.handleValueFallback(
         `Type parameter '${typeParamName ?? "unknown"}' cannot be resolved to concrete type`,
         type,
@@ -735,13 +806,9 @@ export class TypeResolver {
     if (aliasSymbol && !this.isBuiltInAlias(aliasSymbol.getName())) {
       const aliasName = aliasSymbol.getName();
       
-      // Skip if it's a type parameter we're tracking
+      // If it's a type parameter we're tracking, preserve it
       if (this.typeParameters.has(aliasName)) {
-        return this.handleValueFallback(
-          `Type parameter '${aliasName}' cannot be resolved to concrete type`,
-          type,
-          sourceFile.getFilePath(),
-        );
+        return { kind: "type_parameter", name: aliasName };
       }
       
       const decl = aliasSymbol.getDeclarations()?.[0];
@@ -1417,7 +1484,8 @@ export class TypeResolver {
           sourceFile,
         );
 
-        if (resolvedType.kind === "json_value" || this.containsJsonValue(resolvedType)) {
+        if (resolvedType.kind === "json_value" || this.containsJsonValue(resolvedType) ||
+            resolvedType.kind === "type_parameter" || this.containsTypeParameter(resolvedType)) {
           hasUnresolvableType = true;
         }
 
@@ -1517,7 +1585,8 @@ export class TypeResolver {
 
       const resolvedType = this.resolveType(t, sourceFile);
 
-      if (resolvedType.kind === "json_value" || this.containsJsonValue(resolvedType)) {
+      if (resolvedType.kind === "json_value" || this.containsJsonValue(resolvedType) ||
+          resolvedType.kind === "type_parameter" || this.containsTypeParameter(resolvedType)) {
         hasUnresolvableType = true;
       }
 

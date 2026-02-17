@@ -144,6 +144,8 @@ export class RustGenerator {
         return type.elements.some((e) => this.typeUsesHashMap(e));
       case "union":
         return type.variants.some((v) => v.type && this.typeUsesHashMap(v.type));
+      case "type_parameter":
+        return false;
       default:
         return false;
     }
@@ -163,6 +165,8 @@ export class RustGenerator {
         return type.elements.some((e) => this.typeUsesHashSet(e));
       case "union":
         return type.variants.some((v) => v.type && this.typeUsesHashSet(v.type));
+      case "type_parameter":
+        return false;
       default:
         return false;
     }
@@ -189,6 +193,8 @@ export class RustGenerator {
         return this.typeUsesSerdeJson(type.valueType);
       case "set":
         return this.typeUsesSerdeJson(type.elementType);
+      case "type_parameter":
+        return false;
       default:
         return false;
     }
@@ -256,6 +262,9 @@ export class RustGenerator {
           break;
         case "union":
           t.variants.forEach((v) => v.type && collectDeps(v.type));
+          break;
+        case "type_parameter":
+          // Type parameters don't create dependencies
           break;
       }
     };
@@ -551,6 +560,9 @@ export class RustGenerator {
 
       case "json_value":
         return "Value";
+
+      case "type_parameter":
+        return type.name;
 
       default:
         throw new TypeConversionError(

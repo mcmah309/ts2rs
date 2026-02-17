@@ -1,0 +1,7 @@
+{
+    "value": "hello",
+    "name": "test-update",
+    "count": 42,
+    "items": ["a", "b", "c"],
+    "metadata": "extra-info"
+}

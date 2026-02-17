@@ -310,6 +310,10 @@ fn values_equal(a: &serde_json::Value, b: &serde_json::Value) -> bool {
 }
 
 fn create_main(type_name: &str, json_data: &str) {
+    // Detect generic types from the generated .rs file and substitute
+    // type parameters with serde_json::Value for testing
+    let concrete_type = get_concrete_type_name("../test-crate/src/generated.rs", type_name);
+
     let main_content = format!(
         "mod generated;\n\
 \n\
@@ -319,13 +323,13 @@ use std::fs;\n\
 fn main() {{\n\
     let json_data = r#\"{json_data}\"#;\n\
     \n\
-    let value: {type_name} = serde_json::from_str(json_data)\n\
+    let value: {concrete_type} = serde_json::from_str(json_data)\n\
         .expect(\"Failed to deserialize JSON\");\n\
     \n\
     let output_json = serde_json::to_string(&value)\n\
         .expect(\"Failed to serialize to JSON\");\n\
     \n\
-    let lossless_test: {type_name} = serde_json::from_str(&output_json).expect(\"Failed to re-dserialize JSON\");\n\
+    let lossless_test: {concrete_type} = serde_json::from_str(&output_json).expect(\"Failed to re-dserialize JSON\");\n\
     \n\
     if lossless_test != value {{\n\
         panic!(\"Serialization is not lossless\nOriginal: {{:?}}\nAfter: {{:?}}\", value, lossless_test);\n\
@@ -339,6 +343,36 @@ fn main() {{\n\
     );
 
     fs::write("../test-crate/src/main.rs", main_content).expect("Failed to write main.rs");
+}
+
+/// Given a generated .rs file and type name, return the concrete type name
+/// replacing type parameters with `serde_json::Value` for testing.
+fn get_concrete_type_name(generated_rs_path: &str, type_name: &str) -> String {
+    let content = match fs::read_to_string(generated_rs_path) {
+        Ok(c) => c,
+        Err(_) => return type_name.to_string(),
+    };
+
+    let search_struct = format!("pub struct {}<", type_name);
+    let search_enum = format!("pub enum {}<", type_name);
+
+    let generic_start = content
+        .find(&search_struct)
+        .or_else(|| content.find(&search_enum));
+
+    if let Some(pos) = generic_start {
+        let after = &content[pos..];
+        if let Some(lt_pos) = after.find('<') {
+            if let Some(gt_pos) = after.find('>') {
+                let params = &after[lt_pos + 1..gt_pos];
+                let param_count = params.split(',').count();
+                let value_params: Vec<&str> = vec!["serde_json::Value"; param_count];
+                return format!("{}<{}>", type_name, value_params.join(", "));
+            }
+        }
+    }
+
+    type_name.to_string()
 }
 
 

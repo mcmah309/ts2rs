@@ -16,7 +16,8 @@ export type ResolvedType =
   | UnionType           // type T = A | B | C
   | LiteralType         // "literal" | 123 | true
   | JsonValueType       // serde_json::Value (fallback)
-  | TypeAliasType;      // type T = ...
+  | TypeAliasType       // type T = ...
+  | TypeParameterType;  // Generic type parameter (e.g., T, U)
 
 export interface PrimitiveType {
   kind: "primitive";
@@ -123,6 +124,11 @@ export interface LiteralType {
 
 export interface JsonValueType {
   kind: "json_value";
+}
+
+export interface TypeParameterType {
+  kind: "type_parameter";
+  name: string;
 }
 
 /**
