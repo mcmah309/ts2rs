@@ -339,8 +339,7 @@ export class TypeResolver {
       // Use the type node for TypeReference to preserve alias names
       resolvedType = this.resolveTypeFromNode(typeNode, sourceFile);
     } else if (typeNode) {
-      // Use resolveTypeWithNode for other cases to handle unions properly
-      const type = prop.getType();
+      const type = typeNode.getType();
       resolvedType = this.resolveTypeWithNode(type, sourceFile, typeNode);
     } else {
       // Fallback to resolving from the Type object
@@ -359,7 +358,7 @@ export class TypeResolver {
       };
     }
 
-    if (isOptional && resolvedType.kind !== "option") {
+    if (isOptional) {
       resolvedType = {
         kind: "option",
         innerType: resolvedType,
@@ -435,16 +434,15 @@ export class TypeResolver {
           if (propDecl && Node.isPropertySignature(propDecl)) {
             isOptional = propDecl.hasQuestionToken();
             documentation = this.getDocumentation(propDecl);
-            // Get the type from the property signature directly to preserve unions with null
-            propType = propDecl.getType();
             typeNode = propDecl.getTypeNode();
+            propType = typeNode ? typeNode.getType() : propDecl.getType();
           } else {
             propType = prop.getTypeAtLocation(declaration);
           }
 
           let resolvedType = this.resolveTypeWithNode(propType, declaration.getSourceFile(), typeNode);
 
-          if (isOptional && resolvedType.kind !== "option") {
+          if (isOptional) {
             resolvedType = {
               kind: "option",
               innerType: resolvedType,

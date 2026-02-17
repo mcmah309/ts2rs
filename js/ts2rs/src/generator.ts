@@ -76,6 +76,7 @@ export class RustGenerator {
     const needsHashMap = this.checkNeedsHashMap(collectedTypes);
     const needsHashSet = this.checkNeedsHashSet(collectedTypes);
     const needsSerdeJson = this.checkNeedsSerdeJson(collectedTypes);
+    const needsDoubleOption = this.checkNeedsDoubleOption(collectedTypes);
 
     if (needsHashMap || needsHashSet) {
       const collections: string[] = [];
@@ -89,6 +90,17 @@ export class RustGenerator {
     }
 
     lines.push("");
+
+    if (needsDoubleOption) {
+      lines.push("fn deserialize_optional_nullable<'de, D, T>(deserializer: D) -> Result<Option<Option<T>>, D::Error>");
+      lines.push("where");
+      lines.push("    D: serde::Deserializer<'de>,");
+      lines.push("    T: serde::Deserialize<'de>,");
+      lines.push("{");
+      lines.push("    Option::<T>::deserialize(deserializer).map(Some)");
+      lines.push("}");
+      lines.push("");
+    }
 
     const sortedTypes = this.sortByDependency(collectedTypes);
 
@@ -127,6 +139,10 @@ export class RustGenerator {
 
   private checkNeedsSerdeJson(types: CollectedType[]): boolean {
     return types.some((t) => this.typeUsesSerdeJson(t.type));
+  }
+
+  private checkNeedsDoubleOption(types: CollectedType[]): boolean {
+    return types.some((t) => this.typeUsesDoubleOption(t.type));
   }
 
   private typeUsesHashMap(type: ResolvedType): boolean {
@@ -198,6 +214,29 @@ export class RustGenerator {
         return this.typeUsesSerdeJson(type.elementType);
       case "type_parameter":
         return false;
+      default:
+        return false;
+    }
+  }
+
+  private typeUsesDoubleOption(type: ResolvedType): boolean {
+    switch (type.kind) {
+      case "struct":
+        return type.fields.some((f) =>
+          f.type.kind === "option" && f.type.innerType.kind === "option"
+          || this.typeUsesDoubleOption(f.type)
+        ) || (type.typeArguments?.some((a) => this.typeUsesDoubleOption(a)) ?? false);
+      case "union":
+        return type.variants.some((v) => {
+          if (!v.type) return false;
+          if (v.type.kind === "struct" && v.type.fields.length > 0) {
+            return v.type.fields.some((f) =>
+              f.type.kind === "option" && f.type.innerType.kind === "option"
+              || this.typeUsesDoubleOption(f.type)
+            );
+          }
+          return this.typeUsesDoubleOption(v.type);
+        });
       default:
         return false;
     }
@@ -335,6 +374,9 @@ export class RustGenerator {
       field.optional &&
       field.type.kind === "option"
     ) {
+      if (field.type.innerType.kind === "option") {
+        lines.push('#[serde(default, deserialize_with = "deserialize_optional_nullable")]');
+      }
       lines.push('#[serde(skip_serializing_if = "Option::is_none")]');
     }
 
@@ -492,6 +534,9 @@ export class RustGenerator {
       field.optional &&
       field.type.kind === "option"
     ) {
+      if (field.type.innerType.kind === "option") {
+        lines.push('#[serde(default, deserialize_with = "deserialize_optional_nullable")]');
+      }
       lines.push('#[serde(skip_serializing_if = "Option::is_none")]');
     }
 
