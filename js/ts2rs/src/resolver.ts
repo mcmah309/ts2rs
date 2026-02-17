@@ -611,8 +611,13 @@ export class TypeResolver {
               const declaration = this.findTypeDeclaration(sourceFile, typeName);
               if (declaration) {
                 this.resolveTypeByName(sourceFile, typeName);
+                // Resolve type arguments for the inner type reference
+                const innerTypeArgsNodes = typeRef.getTypeArguments();
+                const innerTypeArguments: ResolvedType[] | undefined = innerTypeArgsNodes.length > 0
+                  ? innerTypeArgsNodes.map((argNode) => this.resolveTypeFromNode(argNode, sourceFile))
+                  : undefined;
                 // Check if this is a recursive reference that needs Box wrapping
-                let innerType: ResolvedType = { kind: "struct", name: typeName, fields: [] };
+                let innerType: ResolvedType = { kind: "struct", name: typeName, fields: [], typeArguments: innerTypeArguments };
                 if (this.processingTypes.has(typeName)) {
                   innerType = { kind: "box", innerType };
                 }
@@ -691,13 +696,19 @@ export class TypeResolver {
           return this.resolveType(type, sourceFile);
         }
         
+        // Resolve type arguments if present (e.g., Update<number> -> [f64])
+        const typeArgsNodes = typeRef.getTypeArguments();
+        const typeArguments: ResolvedType[] | undefined = typeArgsNodes.length > 0
+          ? typeArgsNodes.map((argNode) => this.resolveTypeFromNode(argNode, sourceFile))
+          : undefined;
+
         // Try to resolve as a local type
         const declaration = this.findTypeDeclaration(sourceFile, typeName);
         if (declaration) {
           this.resolveTypeByName(sourceFile, typeName);
           // Check if the type was actually collected (it might not be if it has unresolvable variants)
           if (this.collectedTypes.has(typeName) || this.processingTypes.has(typeName)) {
-            return { kind: "struct", name: typeName, fields: [] };
+            return { kind: "struct", name: typeName, fields: [], typeArguments };
           }
           // Type wasn't collected - fall back to Value
           return this.handleValueFallback(

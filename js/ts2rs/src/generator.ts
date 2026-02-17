@@ -135,7 +135,8 @@ export class RustGenerator {
       case "map":
         return true;
       case "struct":
-        return type.fields.some((f) => this.typeUsesHashMap(f.type));
+        return type.fields.some((f) => this.typeUsesHashMap(f.type)) ||
+          (type.typeArguments?.some((a) => this.typeUsesHashMap(a)) ?? false);
       case "array":
         return this.typeUsesHashMap(type.elementType);
       case "option":
@@ -156,7 +157,8 @@ export class RustGenerator {
       case "set":
         return true;
       case "struct":
-        return type.fields.some((f) => this.typeUsesHashSet(f.type));
+        return type.fields.some((f) => this.typeUsesHashSet(f.type)) ||
+          (type.typeArguments?.some((a) => this.typeUsesHashSet(a)) ?? false);
       case "array":
         return this.typeUsesHashSet(type.elementType);
       case "option":
@@ -179,7 +181,8 @@ export class RustGenerator {
       case "struct":
         // Anonymous structs (empty name) are converted to Value
         if (type.name === "") return true;
-        return type.fields.some((f) => this.typeUsesSerdeJson(f.type));
+        return type.fields.some((f) => this.typeUsesSerdeJson(f.type)) ||
+          (type.typeArguments?.some((a) => this.typeUsesSerdeJson(a)) ?? false);
       case "array":
         return this.typeUsesSerdeJson(type.elementType);
       case "option":
@@ -242,6 +245,7 @@ export class RustGenerator {
             deps.push(t.name);
           }
           t.fields.forEach((f) => collectDeps(f.type));
+          t.typeArguments?.forEach(collectDeps);
           break;
         case "array":
           collectDeps(t.elementType);
@@ -540,6 +544,10 @@ export class RustGenerator {
 
       case "struct":
         if (type.name) {
+          if (type.typeArguments && type.typeArguments.length > 0) {
+            const args = type.typeArguments.map((a) => this.resolvedTypeToRust(a)).join(", ");
+            return `${type.name}<${args}>`;
+          }
           return type.name;
         }
         // Anonymous struct - should not happen at top level

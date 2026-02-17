@@ -5,3 +5,10 @@ type Update<T> = {
   items: T[];
   metadata?: T;
 }
+
+export interface SetDocumentPayload {
+  requestId?: Update<number>,
+
+  primaryHtml?: Update<string>;
+  secondaryHtml?: Update<string>;
+}

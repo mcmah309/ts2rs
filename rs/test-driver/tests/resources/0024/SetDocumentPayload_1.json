@@ -1,0 +1,28 @@
+{
+    "requestId": {
+        "value": 10293,
+        "name": "Initial Request ID",
+        "count": 1,
+        "items": [
+            10293,
+            10294
+        ],
+        "metadata": 2026
+    },
+    "primaryHtml": {
+        "value": "<h1>Main Content</h1>",
+        "name": "Header Module",
+        "count": 5,
+        "items": [
+            "<h1>Main Content</h1>",
+            "<p>Introductory paragraph.</p>"
+        ],
+        "metadata": "UTF-8"
+    },
+    "secondaryHtml": {
+        "value": null,
+        "name": "Sidebar Module",
+        "count": 0,
+        "items": []
+    }
+}

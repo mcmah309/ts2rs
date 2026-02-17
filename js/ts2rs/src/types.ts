@@ -86,6 +86,7 @@ export interface StructType {
   fields: StructField[];
   documentation?: string;
   typeParameters?: string[];
+  typeArguments?: ResolvedType[];
 }
 
 export interface EnumVariant {
