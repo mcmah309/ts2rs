@@ -13,23 +13,13 @@
     "catalog": {
       "@types/bun": "latest",
       "typescript": "latest",
-      "@tailwindcss/cli": "latest",
-      "tailwindcss": "latest",
-      "typed-css-modules": "latest",
-      "html-minifier-next": "latest",
-      "web-resource-inliner": "latest",
-      "commander": "latest",
-      "ts-morph": "latest"
+      "commander": "^14.0.3",
+      "ts-morph": "^27.0.2"
     }
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "@tailwindcss/cli": "catalog:",
-    "typescript": "catalog:",
-    "tailwindcss": "catalog:",
-    "typed-css-modules": "catalog:",
-    "html-minifier-next": "catalog:",
-    "web-resource-inliner": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "typescript": "catalog:"
