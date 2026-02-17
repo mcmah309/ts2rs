@@ -611,20 +611,22 @@ export class TypeResolver {
               const declaration = this.findTypeDeclaration(sourceFile, typeName);
               if (declaration) {
                 this.resolveTypeByName(sourceFile, typeName);
-                // Resolve type arguments for the inner type reference
-                const innerTypeArgsNodes = typeRef.getTypeArguments();
-                const innerTypeArguments: ResolvedType[] | undefined = innerTypeArgsNodes.length > 0
-                  ? innerTypeArgsNodes.map((argNode) => this.resolveTypeFromNode(argNode, sourceFile))
-                  : undefined;
-                // Check if this is a recursive reference that needs Box wrapping
-                let innerType: ResolvedType = { kind: "struct", name: typeName, fields: [], typeArguments: innerTypeArguments };
-                if (this.processingTypes.has(typeName)) {
-                  innerType = { kind: "box", innerType };
+                // Only resolve type arguments if the type was actually collected
+                if (this.collectedTypes.has(typeName) || this.processingTypes.has(typeName)) {
+                  const innerTypeArgsNodes = typeRef.getTypeArguments();
+                  const innerTypeArguments: ResolvedType[] | undefined = innerTypeArgsNodes.length > 0
+                    ? innerTypeArgsNodes.map((argNode) => this.resolveTypeFromNode(argNode, sourceFile))
+                    : undefined;
+                  // Check if this is a recursive reference that needs Box wrapping
+                  let innerType: ResolvedType = { kind: "struct", name: typeName, fields: [], typeArguments: innerTypeArguments };
+                  if (this.processingTypes.has(typeName)) {
+                    innerType = { kind: "box", innerType };
+                  }
+                  return {
+                    kind: "option",
+                    innerType,
+                  };
                 }
-                return {
-                  kind: "option",
-                  innerType,
-                };
               }
             }
           }
@@ -696,18 +698,18 @@ export class TypeResolver {
           return this.resolveType(type, sourceFile);
         }
         
-        // Resolve type arguments if present (e.g., Update<number> -> [f64])
-        const typeArgsNodes = typeRef.getTypeArguments();
-        const typeArguments: ResolvedType[] | undefined = typeArgsNodes.length > 0
-          ? typeArgsNodes.map((argNode) => this.resolveTypeFromNode(argNode, sourceFile))
-          : undefined;
-
         // Try to resolve as a local type
         const declaration = this.findTypeDeclaration(sourceFile, typeName);
         if (declaration) {
           this.resolveTypeByName(sourceFile, typeName);
           // Check if the type was actually collected (it might not be if it has unresolvable variants)
           if (this.collectedTypes.has(typeName) || this.processingTypes.has(typeName)) {
+            // Only resolve type arguments after confirming the parent type resolved successfully,
+            // to avoid collecting unused types (e.g., Error in Result<string, Error> when Result fails)
+            const typeArgsNodes = typeRef.getTypeArguments();
+            const typeArguments: ResolvedType[] | undefined = typeArgsNodes.length > 0
+              ? typeArgsNodes.map((argNode) => this.resolveTypeFromNode(argNode, sourceFile))
+              : undefined;
             return { kind: "struct", name: typeName, fields: [], typeArguments };
           }
           // Type wasn't collected - fall back to Value
