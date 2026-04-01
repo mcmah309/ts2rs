@@ -1,0 +1,24 @@
+{
+  "id": 101,
+  "one": {
+    "span": [0, 15],
+    "opacity": 1.0
+  },
+  "many": [
+    {
+      "span": [0, 8],
+      "opacity": 0.8
+    },
+    {
+      "span": [12, 20],
+      "opacity": 0.5
+    }
+  ],
+  "color": [255, 87, 34],
+  "metadata": {
+    "alignment_score": 0.98,
+    "method": "manual_annotation",
+    "note": "Primary translation match"
+  },
+  "arrowToOne": false
+}

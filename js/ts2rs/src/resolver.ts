@@ -1264,11 +1264,14 @@ export class TypeResolver {
     }
 
     if (nullOrUndefinedTypes.length > 0 && nonNullTypes.length > 1) {
-      // Create a union without the null/undefined and wrap in Option
-      // Since we have multiple non-null types, return json_value wrapped in Option
+      // TypeScript may expand types in unions (e.g. `boolean` → `true | false`),
+      // so `T | null` can appear as multiple non-null members.
+      // Use getNonNullableType() to recover the original non-null type and resolve it.
+      const nonNullableType = type.getNonNullableType();
+      const innerType = this.resolveType(nonNullableType, sourceFile);
       return {
         kind: "option",
-        innerType: { kind: "json_value" },
+        innerType,
       };
     }
 
